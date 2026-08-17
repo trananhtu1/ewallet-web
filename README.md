@@ -44,6 +44,27 @@ npm run dev
 | `npm run preview` | xem thử bản build |
 | `npm run lint` | kiểm tra code |
 
+## Deploy (Vercel)
+
+Vercel tự nhận ra đây là project Vite, không cần cấu hình build.
+
+**Bắt buộc:** vào Project Settings → Environment Variables, thêm `VITE_API_URL`
+trỏ vào domain Render của backend, **rồi mới deploy**.
+
+> ⚠️ **Bẫy quan trọng nhất:** Vite **nướng** biến `VITE_*` vào file `.js` lúc
+> **build**, không đọc lúc chạy. Kiểm chứng được: build với một URL rồi mở file
+> trong `dist/assets/*.js` ra tìm, sẽ thấy chuỗi URL nằm nguyên trong đó.
+>
+> Hệ quả: đổi `VITE_API_URL` trên Vercel thì **phải Redeploy**, không phải restart.
+> Chỉ đổi biến rồi thấy trang vẫn gọi URL cũ — đây là lý do.
+>
+> Khác hẳn backend: Spring đọc biến lúc **chạy**, đổi biến + restart là xong.
+
+`vercel.json` có một quy tắc `rewrites` đưa mọi đường dẫn về `index.html`. Chưa
+cần lúc này vì trang chỉ có một route, nhưng khi thêm React Router ở Week 3 thì
+thiếu nó là vào `/login` rồi **F5 sẽ ra 404** — Vercel đi tìm file `/login` không
+có thật, trong khi routing do React xử lý ở phía trình duyệt.
+
 ## Xử lý sự cố
 
 **Trang báo `Failed to fetch`** — dòng chữ này gần như không nói gì. Nguyên nhân thật
