@@ -5,15 +5,13 @@ import { useEffect, useState } from 'react'
 // Nhớ luật đó: mọi thứ có tiền tố VITE_ đều là công khai, ai mở DevTools cũng đọc được.
 const API_URL = import.meta.env.VITE_API_URL
 
-// Ba trạng thái, không phải hai. Người mới hay quên 'loading' rồi render
-// nhầm "lỗi" trong lúc request còn đang bay.
-//   { status: 'loading' }
-//   { status: 'ok',    data: {...} }
-//   { status: 'error', message: '...' }
-const LOADING = { status: 'loading' }
-
 export default function App() {
-  const [health, setHealth] = useState(LOADING)
+  // Ba trạng thái, không phải hai:
+  //   { status: 'loading' }
+  //   { status: 'ok',    data: {...} }
+  //   { status: 'error', message: '...' }
+  // Quên 'loading' là render nhầm "lỗi" trong lúc request còn đang bay.
+  const [health, setHealth] = useState({ status: 'loading' })
 
   useEffect(() => {
     // AbortController để huỷ request khi component unmount.
