@@ -1,0 +1,6 @@
+# Chuẩn hoá xuống dòng khi làm việc trên hai máy (macOS công ty, Windows nhà).
+* text=auto
+
+*.sh    text eol=lf
+*.cmd   text eol=crlf
+*.bat   text eol=crlf
