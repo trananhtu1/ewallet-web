@@ -1,111 +1,127 @@
+/* Mot bang mau, mot thang do khoang cach. Khong keo them thu vien CSS nao:
+   project nay chi co 4 man, va mot file 150 dong doc duoc het thi de sua hon. */
 :root {
-  --text: #6b6375;
-  --text-h: #08060d;
-  --bg: #fff;
-  --border: #e5e4e7;
-  --code-bg: #f4f3ec;
-  --accent: #aa3bff;
-  --accent-bg: rgba(170, 59, 255, 0.1);
-  --accent-border: rgba(170, 59, 255, 0.5);
-  --social-bg: rgba(244, 243, 236, 0.5);
-  --shadow:
-    rgba(0, 0, 0, 0.1) 0 10px 15px -3px, rgba(0, 0, 0, 0.05) 0 4px 6px -2px;
-
-  --sans: system-ui, 'Segoe UI', Roboto, sans-serif;
-  --heading: system-ui, 'Segoe UI', Roboto, sans-serif;
-  --mono: ui-monospace, Consolas, monospace;
-
-  font: 18px/145% var(--sans);
-  letter-spacing: 0.18px;
-  color-scheme: light dark;
-  color: var(--text);
-  background: var(--bg);
-  font-synthesis: none;
-  text-rendering: optimizeLegibility;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-
-  @media (max-width: 1024px) {
-    font-size: 16px;
-  }
+  --bg: #f6f7f9;
+  --surface: #ffffff;
+  --border: #e3e6ea;
+  --text: #14181f;
+  --muted: #6b7280;
+  --primary: #1f6feb;
+  --in: #0f8a4b;
+  --out: #c2410c;
+  --danger: #c81e1e;
+  --radius: 12px;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --text: #9ca3af;
-    --text-h: #f3f4f6;
-    --bg: #16171d;
-    --border: #2e303a;
-    --code-bg: #1f2028;
-    --accent: #c084fc;
-    --accent-bg: rgba(192, 132, 252, 0.15);
-    --accent-border: rgba(192, 132, 252, 0.5);
-    --social-bg: rgba(47, 48, 58, 0.5);
-    --shadow:
-      rgba(0, 0, 0, 0.4) 0 10px 15px -3px, rgba(0, 0, 0, 0.25) 0 4px 6px -2px;
-  }
-
-  #social .button-icon {
-    filter: invert(1) brightness(2);
-  }
-}
+* { box-sizing: border-box; }
 
 body {
   margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+  line-height: 1.5;
 }
 
-#root {
-  width: 1126px;
-  max-width: 100%;
-  margin: 0 auto;
-  text-align: center;
-  border-inline: 1px solid var(--border);
-  min-height: 100svh;
+.page { max-width: 720px; margin: 0 auto; padding: 32px 20px 64px; }
+
+.header h1 { margin: 0 0 2px; font-size: 26px; }
+.header { margin-bottom: 20px; }
+
+.muted { color: var(--muted); font-size: 14px; margin: 0; }
+.label { color: var(--muted); font-size: 13px; margin: 0 0 4px; display: block; }
+
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 20px;
+  margin-bottom: 16px;
+}
+.card h2 { margin: 0 0 14px; font-size: 15px; font-weight: 600; }
+
+.card--hero { text-align: center; padding: 28px 20px; }
+
+.balance {
+  font-size: 34px;
+  font-weight: 650;
+  margin: 2px 0 6px;
+  /* Chu so deu be ngang -> so du khong nhay khi doi gia tri. */
+  font-variant-numeric: tabular-nums;
+}
+.balance--skeleton {
+  background: var(--border);
+  border-radius: 6px;
+  max-width: 220px;
+  margin: 8px auto 12px;
+}
+
+.grid { display: grid; gap: 16px; grid-template-columns: 1fr 1fr; }
+@media (max-width: 620px) { .grid { grid-template-columns: 1fr; } }
+
+.field { display: block; margin-bottom: 14px; }
+
+.input {
+  width: 100%;
+  padding: 9px 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font: inherit;
+  background: var(--surface);
+  color: inherit;
+}
+.input:focus { outline: 2px solid var(--primary); outline-offset: -1px; }
+.input--error { border-color: var(--danger); }
+.input:disabled { background: var(--bg); color: var(--muted); }
+
+.error { color: var(--danger); font-size: 13px; display: block; margin-top: 4px; }
+.error--form { margin: 0 0 12px; font-weight: 500; }
+
+.button {
+  width: 100%;
+  padding: 10px 16px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+  font: inherit;
+  font-weight: 550;
+  cursor: pointer;
+}
+.button:hover:not(:disabled) { background: var(--bg); }
+.button--primary { background: var(--primary); border-color: var(--primary); color: #fff; }
+.button--primary:hover:not(:disabled) { filter: brightness(1.08); }
+.button:disabled { opacity: 0.6; cursor: not-allowed; }
+
+.notice {
+  background: #fff8e1;
+  border: 1px solid #f2dfa0;
+  border-radius: var(--radius);
+  padding: 12px 16px;
+  font-size: 14px;
+  margin: 0 0 16px;
+}
+.notice--error { background: #fdeaea; border-color: #f3bcbc; color: var(--danger); }
+
+.tx-list { list-style: none; margin: 0; padding: 0; }
+
+.tx {
   display: flex;
-  flex-direction: column;
-  box-sizing: border-box;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  padding: 11px 0;
+  border-bottom: 1px solid var(--border);
 }
+.tx:last-child { border-bottom: 0; padding-bottom: 0; }
 
-h1,
-h2 {
-  font-family: var(--heading);
-  font-weight: 500;
-  color: var(--text-h);
-}
+.tx__main { display: flex; flex-direction: column; min-width: 0; }
+.tx__title { font-size: 14px; }
+.tx__time { color: var(--muted); font-size: 12px; }
 
-h1 {
-  font-size: 56px;
-  letter-spacing: -1.68px;
-  margin: 32px 0;
-  @media (max-width: 1024px) {
-    font-size: 36px;
-    margin: 20px 0;
-  }
-}
-h2 {
-  font-size: 24px;
-  line-height: 118%;
-  letter-spacing: -0.24px;
-  margin: 0 0 8px;
-  @media (max-width: 1024px) {
-    font-size: 20px;
-  }
-}
-p {
-  margin: 0;
-}
+.tx__right { display: flex; align-items: center; gap: 8px; white-space: nowrap; }
+.tx__amount { font-weight: 600; font-variant-numeric: tabular-nums; font-size: 14px; }
+.tx__amount--in { color: var(--in); }
+.tx__amount--out { color: var(--out); }
 
-code,
-.counter {
-  font-family: var(--mono);
-  display: inline-flex;
-  border-radius: 4px;
-  color: var(--text-h);
-}
-
-code {
-  font-size: 15px;
-  line-height: 135%;
-  padding: 4px 8px;
-  background: var(--code-bg);
-}
+.badge { font-size: 11px; padding: 2px 7px; border-radius: 999px; }
+.badge--failed { background: #fdeaea; color: var(--danger); }
