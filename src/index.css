@@ -1,127 +1,148 @@
-/* Mot bang mau, mot thang do khoang cach. Khong keo them thu vien CSS nao:
-   project nay chi co 4 man, va mot file 150 dong doc duoc het thi de sua hon. */
-:root {
-  --bg: #f6f7f9;
-  --surface: #ffffff;
-  --border: #e3e6ea;
-  --text: #14181f;
-  --muted: #6b7280;
-  --primary: #1f6feb;
-  --in: #0f8a4b;
-  --out: #c2410c;
-  --danger: #c81e1e;
-  --radius: 12px;
+/* Tailwind v4. Mot dong @import duoi day keo ve ba thu: preflight (reset),
+   theme mac dinh, va engine sinh utility. Khong co tailwind.config.js va khong
+   co postcss.config.js - v4 bo ca hai, cau hinh nam thang trong file CSS nay. */
+@import "tailwindcss";
+
+/* Bang mau cua project. Khai bao trong @theme chu khong phai :root.
+   Khac biet dang gia: @theme vua tao bien CSS (var(--color-primary)) VUA sinh
+   ra utility tuong ung (bg-primary, text-primary, border-primary). Viet o :root
+   thi chi duoc ve dau. Mot bang mau, dung duoc ca hai loi viet - CSS thuong o
+   duoi va class Tailwind tren JSX khong bao gio lech mau nhau. */
+@theme {
+  --color-bg: #f6f7f9;
+  --color-surface: #ffffff;
+  --color-border: #e3e6ea;
+  --color-text: #14181f;
+  --color-muted: #6b7280;
+  --color-primary: #1f6feb;
+  --color-in: #0f8a4b;
+  --color-out: #c2410c;
+  --color-danger: #c81e1e;
+
+  --radius-card: 12px;
+
+  --font-sans: system-ui, -apple-system, "Segoe UI", sans-serif;
 }
 
-* { box-sizing: border-box; }
-
-body {
-  margin: 0;
-  background: var(--bg);
-  color: var(--text);
-  font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
-  line-height: 1.5;
+/* `* { box-sizing: border-box }` da bi xoa khoi day: preflight cua Tailwind
+   dat san roi, giu lai chi la lap. */
+@layer base {
+  body {
+    background: var(--color-bg);
+    color: var(--color-text);
+    font-family: var(--font-sans);
+    line-height: 1.5;
+  }
 }
 
-.page { max-width: 720px; margin: 0 auto; padding: 32px 20px 64px; }
+/* Toan bo class san co nam TRONG @layer components, khong de tran ra ngoai.
+   Ly do: hai class cung do uu tien thi cai dung sau trong file thang. De tran
+   ra ngoai layer, .card se dung sau utility cua Tailwind, nen <form class="card
+   p-8"> se khong an p-8 - dung thu cang lam cang thay vo ly. Nam trong layer
+   components thi utility luon thang, dung nhu ky vong khi tron hai loi viet. */
+@layer components {
+  .page { max-width: 720px; margin: 0 auto; padding: 32px 20px 64px; }
 
-.header h1 { margin: 0 0 2px; font-size: 26px; }
-.header { margin-bottom: 20px; }
+  /* font-weight phai ghi ro: preflight tra h1..h6 ve `font-weight: inherit`,
+     khong con dam theo mac dinh cua trinh duyet nua. */
+  .header h1 { margin: 0 0 2px; font-size: 26px; font-weight: 700; }
+  .header { margin-bottom: 20px; }
 
-.muted { color: var(--muted); font-size: 14px; margin: 0; }
-.label { color: var(--muted); font-size: 13px; margin: 0 0 4px; display: block; }
+  .muted { color: var(--color-muted); font-size: 14px; margin: 0; }
+  .label { color: var(--color-muted); font-size: 13px; margin: 0 0 4px; display: block; }
 
-.card {
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  padding: 20px;
-  margin-bottom: 16px;
+  .card {
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-card);
+    padding: 20px;
+    margin-bottom: 16px;
+  }
+  .card h2 { margin: 0 0 14px; font-size: 15px; font-weight: 600; }
+
+  .card--hero { text-align: center; padding: 28px 20px; }
+
+  .balance {
+    font-size: 34px;
+    font-weight: 650;
+    margin: 2px 0 6px;
+    /* Chu so deu be ngang -> so du khong nhay khi doi gia tri. */
+    font-variant-numeric: tabular-nums;
+  }
+  .balance--skeleton {
+    background: var(--color-border);
+    border-radius: 6px;
+    max-width: 220px;
+    margin: 8px auto 12px;
+  }
+
+  .grid { display: grid; gap: 16px; grid-template-columns: 1fr 1fr; }
+  @media (max-width: 620px) { .grid { grid-template-columns: 1fr; } }
+
+  .field { display: block; margin-bottom: 14px; }
+
+  .input {
+    width: 100%;
+    padding: 9px 12px;
+    border: 1px solid var(--color-border);
+    border-radius: 8px;
+    font: inherit;
+    background: var(--color-surface);
+    color: inherit;
+  }
+  .input:focus { outline: 2px solid var(--color-primary); outline-offset: -1px; }
+  .input--error { border-color: var(--color-danger); }
+  .input:disabled { background: var(--color-bg); color: var(--color-muted); }
+
+  .error { color: var(--color-danger); font-size: 13px; display: block; margin-top: 4px; }
+  .error--form { margin: 0 0 12px; font-weight: 500; }
+
+  .button {
+    width: 100%;
+    padding: 10px 16px;
+    border: 1px solid var(--color-border);
+    border-radius: 8px;
+    background: var(--color-surface);
+    font: inherit;
+    font-weight: 550;
+    cursor: pointer;
+  }
+  .button:hover:not(:disabled) { background: var(--color-bg); }
+  .button--primary { background: var(--color-primary); border-color: var(--color-primary); color: #fff; }
+  .button--primary:hover:not(:disabled) { filter: brightness(1.08); }
+  .button:disabled { opacity: 0.6; cursor: not-allowed; }
+
+  .notice {
+    background: #fff8e1;
+    border: 1px solid #f2dfa0;
+    border-radius: var(--radius-card);
+    padding: 12px 16px;
+    font-size: 14px;
+    margin: 0 0 16px;
+  }
+  .notice--error { background: #fdeaea; border-color: #f3bcbc; color: var(--color-danger); }
+
+  .tx-list { list-style: none; margin: 0; padding: 0; }
+
+  .tx {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    padding: 11px 0;
+    border-bottom: 1px solid var(--color-border);
+  }
+  .tx:last-child { border-bottom: 0; padding-bottom: 0; }
+
+  .tx__main { display: flex; flex-direction: column; min-width: 0; }
+  .tx__title { font-size: 14px; }
+  .tx__time { color: var(--color-muted); font-size: 12px; }
+
+  .tx__right { display: flex; align-items: center; gap: 8px; white-space: nowrap; }
+  .tx__amount { font-weight: 600; font-variant-numeric: tabular-nums; font-size: 14px; }
+  .tx__amount--in { color: var(--color-in); }
+  .tx__amount--out { color: var(--color-out); }
+
+  .badge { font-size: 11px; padding: 2px 7px; border-radius: 999px; }
+  .badge--failed { background: #fdeaea; color: var(--color-danger); }
 }
-.card h2 { margin: 0 0 14px; font-size: 15px; font-weight: 600; }
-
-.card--hero { text-align: center; padding: 28px 20px; }
-
-.balance {
-  font-size: 34px;
-  font-weight: 650;
-  margin: 2px 0 6px;
-  /* Chu so deu be ngang -> so du khong nhay khi doi gia tri. */
-  font-variant-numeric: tabular-nums;
-}
-.balance--skeleton {
-  background: var(--border);
-  border-radius: 6px;
-  max-width: 220px;
-  margin: 8px auto 12px;
-}
-
-.grid { display: grid; gap: 16px; grid-template-columns: 1fr 1fr; }
-@media (max-width: 620px) { .grid { grid-template-columns: 1fr; } }
-
-.field { display: block; margin-bottom: 14px; }
-
-.input {
-  width: 100%;
-  padding: 9px 12px;
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  font: inherit;
-  background: var(--surface);
-  color: inherit;
-}
-.input:focus { outline: 2px solid var(--primary); outline-offset: -1px; }
-.input--error { border-color: var(--danger); }
-.input:disabled { background: var(--bg); color: var(--muted); }
-
-.error { color: var(--danger); font-size: 13px; display: block; margin-top: 4px; }
-.error--form { margin: 0 0 12px; font-weight: 500; }
-
-.button {
-  width: 100%;
-  padding: 10px 16px;
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  background: var(--surface);
-  font: inherit;
-  font-weight: 550;
-  cursor: pointer;
-}
-.button:hover:not(:disabled) { background: var(--bg); }
-.button--primary { background: var(--primary); border-color: var(--primary); color: #fff; }
-.button--primary:hover:not(:disabled) { filter: brightness(1.08); }
-.button:disabled { opacity: 0.6; cursor: not-allowed; }
-
-.notice {
-  background: #fff8e1;
-  border: 1px solid #f2dfa0;
-  border-radius: var(--radius);
-  padding: 12px 16px;
-  font-size: 14px;
-  margin: 0 0 16px;
-}
-.notice--error { background: #fdeaea; border-color: #f3bcbc; color: var(--danger); }
-
-.tx-list { list-style: none; margin: 0; padding: 0; }
-
-.tx {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 12px;
-  padding: 11px 0;
-  border-bottom: 1px solid var(--border);
-}
-.tx:last-child { border-bottom: 0; padding-bottom: 0; }
-
-.tx__main { display: flex; flex-direction: column; min-width: 0; }
-.tx__title { font-size: 14px; }
-.tx__time { color: var(--muted); font-size: 12px; }
-
-.tx__right { display: flex; align-items: center; gap: 8px; white-space: nowrap; }
-.tx__amount { font-weight: 600; font-variant-numeric: tabular-nums; font-size: 14px; }
-.tx__amount--in { color: var(--in); }
-.tx__amount--out { color: var(--out); }
-
-.badge { font-size: 11px; padding: 2px 7px; border-radius: 999px; }
-.badge--failed { background: #fdeaea; color: var(--danger); }

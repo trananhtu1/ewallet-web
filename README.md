@@ -2,9 +2,15 @@
 
 Frontend cho ứng dụng ví điện tử.
 
-**Stack:** React 19 · Vite 8 · JavaScript
+**Stack:** React 19 · Vite 8 · JavaScript · Tailwind CSS 4
 
 Backend nằm ở repo riêng: [`ewallet-api`](https://github.com/trananhtu1/ewallet-api)
+
+> 📋 **Đang làm gì tiếp theo:** [`VIEC-CAN-LAM.md`](VIEC-CAN-LAM.md)
+> — việc theo thứ tự, 8 tình huống kiểm thử, và ba luật không được phá.
+>
+> 📄 Hợp đồng API đầy đủ (mọi JSON copy từ response thật, bảng 7 mã lỗi):
+> `java-learn/FE-SONG-SONG.md`
 
 ---
 
@@ -43,6 +49,25 @@ npm run dev
 | `npm run build` | build ra `dist/` |
 | `npm run preview` | xem thử bản build |
 | `npm run lint` | kiểm tra code |
+
+## Styling — Tailwind CSS 4
+
+Tailwind v4 chạy như **một plugin của Vite**, không đi qua PostCSS nữa. Hệ quả:
+**không có `tailwind.config.js`, không có `postcss.config.js`** — tìm hai file này
+không thấy là đúng, đừng tạo lại. Toàn bộ cấu hình nằm trong `src/index.css`.
+
+Bảng màu khai báo bằng `@theme` chứ không phải `:root`. Khác biệt đáng giá: `@theme`
+vừa tạo biến CSS vừa **sinh ra utility tương ứng** — khai `--color-primary` thì có
+luôn `bg-primary`, `text-primary`, `border-primary`. Khai ở `:root` chỉ được vế đầu.
+Một bảng màu, dùng được cả CSS thường lẫn class trên JSX, không bao giờ lệch nhau.
+
+Các class có sẵn (`.card`, `.button`, `.input`…) nằm trong `@layer components`, cố ý.
+Hai class cùng độ ưu tiên thì cái đứng sau trong file thắng — để tràn ra ngoài layer
+thì `.card` sẽ đè utility, và `<form class="card p-8">` **không ăn `p-8`**. Nằm trong
+`components` thì utility luôn thắng, trộn hai lối viết mới hoạt động đúng kỳ vọng.
+
+> ⚠️ Preflight (reset của Tailwind) trả `h1`–`h6` về `font-weight: inherit` — không
+> còn đậm theo mặc định trình duyệt. Thêm heading mới thì phải tự ghi `font-weight`.
 
 ## Deploy (Vercel)
 
