@@ -49,6 +49,8 @@ npm run dev
 | `npm run build` | build ra `dist/` |
 | `npm run preview` | xem thử bản build |
 | `npm run lint` | kiểm tra code |
+| `npm test` | chạy test một lượt rồi thoát |
+| `npm run test:watch` | chạy test, tự chạy lại khi sửa file |
 
 ## Styling — Tailwind CSS 4
 
@@ -68,6 +70,86 @@ thì `.card` sẽ đè utility, và `<form class="card p-8">` **không ăn `p-8`
 
 > ⚠️ Preflight (reset của Tailwind) trả `h1`–`h6` về `font-weight: inherit` — không
 > còn đậm theo mặc định trình duyệt. Thêm heading mới thì phải tự ghi `font-weight`.
+
+**Phạm vi quét (`@source`) được chỉ định tay, đừng bỏ đi.** Mặc định Tailwind quét cả
+thư mục gốc repo **kể cả `README.md`** — nên mọi ví dụ `bg-primary` viết trong tài liệu
+đều biến thành CSS thật gửi tới người dùng. Đã đo: bỏ `source(none)` ra thì bundle CSS
+phình từ 7.06 kB lên 9.12 kB, toàn class không component nào dùng.
+
+Hệ quả cần nhớ: **thêm thư mục source mới ngoài `src/` thì phải thêm một dòng `@source`**,
+không thì class trong đó im lặng không sinh ra CSS.
+
+Đặt tên class tự viết thì tránh tên Tailwind đã sở hữu — `.grid` là một ví dụ, nên class
+bố cục hai cột ở đây tên là `.form-grid`.
+
+## Test
+
+```bash
+npm test
+```
+
+Vitest dùng chung `vite.config.js` với app, **không có `vitest.config.js` riêng** — để test
+chạy qua đúng đường ống mà app chạy, tránh cảnh "test xanh nhưng build đỏ".
+
+Trọng tâm test nằm ở `src/lib/money.test.js`. Nó không kiểm "hàm chạy đúng" mà kiểm **lý do
+hàm đó tồn tại**: có một ca dựng riêng cho `12345678901234567.89`, sẽ đỏ ngay nếu ai đó
+nhét `Number()` vào giữa đường vì "cho gọn". Các test còn lại giữ cho luật validate ở FE
+khớp với `@DecimalMin` / `@Digits` bên backend.
+
+## Đăng nhập & cấu trúc
+
+```
+src/
+  auth/        AuthProvider · useAuth · RequireAuth   (phiên đăng nhập)
+  pages/       LoginPage · RegisterPage · WalletPage  (một file một màn)
+  components/  các khối dùng lại trong màn ví
+  lib/         api · session · money · authRules      (không biết gì về React)
+```
+
+| Route | Ai vào được |
+|---|---|
+| `/login`, `/register` | mọi người; đã đăng nhập rồi thì bị đẩy về `/` |
+| `/` | phải đăng nhập, `RequireAuth` chặn |
+| còn lại | đẩy về `/`, rồi `RequireAuth` quyết định tiếp |
+
+`RequireAuth` **không phải lớp bảo mật** — ai cũng sửa được JavaScript trong trình duyệt.
+Thứ chặn thật là backend: token sai thì 401, không quan tâm màn hình nào hiện ra. Nó chỉ để
+người dùng không nhìn thấy một trang trống rỗng.
+
+**Token lưu ở `localStorage`.** Đánh đổi có thật, cần nói được: script chèn qua XSS đọc được
+token; đổi lại nó không tự gửi kèm mỗi request nên không dính CSRF. Backend đang stateless và
+nhận token qua header `Authorization`, không dùng cookie — nên đây là lựa chọn khớp với thiết
+kế đó. Muốn `HttpOnly` cookie thì phải sửa cả backend lẫn CORS.
+
+`Authorization: Bearer …` được gắn ở **đúng một chỗ** trong `api()`. Đổi cách xác thực thì sửa
+ở đó, không phải đi tìm từng chỗ gọi API.
+
+> ⚠️ **Hai loại 401, ý nghĩa ngược nhau.** Đang *có* token mà bị 401 = phiên hết hạn giữa
+> chừng → đăng xuất. *Chưa* có token mà bị 401 = đang gõ sai mật khẩu → tuyệt đối không đăng
+> xuất, nếu không màn đăng nhập sẽ tự đá chính nó mỗi lần gõ sai. `api.js` phân biệt bằng việc
+> lúc gửi request có token hay không.
+
+`session.js` là **một chỗ duy nhất** biết phiên hiện tại. Nó lưu **mốc hết hạn** chứ không lưu
+số giây còn lại (số giây còn lại tính từ lúc nào? tải lại trang là không ai biết nữa), và trừ
+hao 10 giây trước mốc thật — token còn 2 giây thì gửi đi gần như chắc chắn ăn 401 giữa chừng.
+
+## Luật số một: tiền là chuỗi — **cả hai chiều**
+
+Backend cố ý trả số tiền dạng `String` (`"250000.50"`), vì JavaScript chỉ có một kiểu số
+và nó là `double`: `Number('12345678901234567.89')` ra `12345678901234568` — mất cả xu lẫn
+hàng đơn vị. `src/lib/money.js` vì thế **không gọi `Number()` ở bất cứ bước nào**.
+
+Điều dễ quên: luật này áp dụng cho **chiều gửi lên** nữa. `api.js` từng gửi
+`amount: Number(amount)` — đọc thì hợp lý vì backend nhận `BigDecimal`, nhưng nó làm hỏng
+số tiền *ngay trước khi rời trình duyệt*, trước cả khi backend kịp nhìn thấy. Giờ gửi chuỗi.
+
+> Đã đo trên chính backend (`target/classes` + đúng bản Jackson của nó): gửi chuỗi
+> `"12345678901234567.89"` thì `BigDecimal` nhận được đúng từng chữ số. Jackson ép
+> `String` → `BigDecimal` sẵn, **không phải sửa gì bên backend**.
+
+ID ví thì vẫn gửi số — chúng là `long` và là số nguyên nhỏ, không có gì để mất.
+
+Cần cộng trừ tiền thì dùng `big.js`, đừng tự tính bằng số thực. Hiện chưa chỗ nào cần.
 
 ## Deploy (Vercel)
 

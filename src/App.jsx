@@ -1,110 +1,35 @@
-import { useCallback, useEffect, useState } from 'react'
-import DepositForm from './components/DepositForm'
-import TransactionList from './components/TransactionList'
-import TransferForm from './components/TransferForm'
-import WalletCard from './components/WalletCard'
-import { getTransactions, getWallet } from './lib/api'
-import { currentWalletId } from './lib/session'
+import { Navigate, Route, Routes } from 'react-router'
+import RequireAuth from './auth/RequireAuth'
+import LoginPage from './pages/LoginPage'
+import RegisterPage from './pages/RegisterPage'
+import WalletPage from './pages/WalletPage'
 
-// Cho qua bay nhieu giay thi gan nhu chac chan backend dang ngu day chu khong
-// phai mang cham: goi luc backend da thuc chi mat chua toi 1 giay.
-// Render free cho service ngu sau 15 phut khong co traffic, day lai mat ~1 phut.
-const WAKE_HINT_AFTER_SECONDS = 4
-
+/**
+ * Khung dieu huong.
+ *
+ * <p>Co dinh tuyen o day thi `vercel.json` moi thuc su can den: quy tac rewrites
+ * dua MOI duong dan ve index.html. Thieu no, vao thang /login roi F5 se ra 404 -
+ * Vercel di tim mot file ten /login khong co that, trong khi routing do React xu
+ * ly o phia trinh duyet.
+ */
 export default function App() {
-  // Backend chua co JWT nen vi goi bang id tran. Doi id thi chi sua session.js.
-  const walletId = currentWalletId()
-
-  const [wallet, setWallet] = useState(null)
-  const [transactions, setTransactions] = useState([])
-  const [loading, setLoading] = useState(true)
-  const [loadError, setLoadError] = useState(null)
-  const [elapsed, setElapsed] = useState(0)
-
-  const reload = useCallback(
-    async (signal) => {
-      setLoadError(null)
-      try {
-        // Hai request doc lap nhau -> ban song song, khong xep hang.
-        const [walletData, txData] = await Promise.all([
-          getWallet(walletId, { signal }),
-          getTransactions(walletId, 20, { signal }),
-        ])
-        setWallet(walletData)
-        setTransactions(txData)
-      } catch (error) {
-        if (error.name === 'AbortError') return
-        setLoadError(error)
-      } finally {
-        setLoading(false)
-      }
-    },
-    [walletId],
-  )
-
-  useEffect(() => {
-    // AbortController de huy request khi unmount. Thieu no, StrictMode goi
-    // effect 2 lan o dev -> 2 request, va request cu ve muon co the ghi de
-    // ket qua moi (race condition).
-    const controller = new AbortController()
-    reload(controller.signal)
-    return () => controller.abort()
-  }, [reload])
-
-  // Dong ho chi chay trong luc con dang cho lan dau.
-  useEffect(() => {
-    if (!loading) return
-
-    const startedAt = Date.now()
-    // Tinh bang HIEU cua Date.now(), khong cong don mot bien dem: trinh duyet
-    // ha tan suat setInterval khi tab chay nen, cong don se ra so sai bet.
-    const timer = setInterval(() => setElapsed(Math.round((Date.now() - startedAt) / 1000)), 500)
-    return () => clearInterval(timer)
-  }, [loading])
-
-  // Nap/chuyen tien xong: response DA LA vi moi -> dung luon, khong goi lai
-  // GET /api/wallets/{id}. Nhung lich su thi phai lay lai vi co dong moi.
-  function handleMoneyMoved(updatedWallet) {
-    setWallet(updatedWallet)
-    getTransactions(walletId, 20).then(setTransactions).catch(() => {})
-  }
-
-  const isWaking = loading && elapsed >= WAKE_HINT_AFTER_SECONDS
-
   return (
-    <div className="page">
-      <header className="header">
-        <h1>Ví điện tử</h1>
-        <p className="muted">Ví #{walletId}</p>
-      </header>
+    <Routes>
+      <Route path="/login" element={<LoginPage />} />
+      <Route path="/register" element={<RegisterPage />} />
 
-      {isWaking && (
-        <p className="notice">
-          Backend đang khởi động — đã chờ {elapsed}s. Nó chạy trên gói miễn phí của Render,
-          tự tắt sau 15 phút không ai dùng và mất khoảng một phút để dậy lại. Trang đang chờ,
-          không phải lỗi.
-        </p>
-      )}
+      <Route
+        path="/"
+        element={
+          <RequireAuth>
+            <WalletPage />
+          </RequireAuth>
+        }
+      />
 
-      {loadError && (
-        <p className="notice notice--error">
-          {loadError.code === 'WALLET_NOT_FOUND'
-            ? `Không tìm thấy ví #${walletId}. Tạo dữ liệu mẫu trong Neon rồi tải lại trang.`
-            : loadError.message}
-        </p>
-      )}
-
-      <WalletCard wallet={wallet ?? {}} loading={loading} />
-
-      <div className="grid">
-        <DepositForm walletId={walletId} onDone={handleMoneyMoved} />
-        <TransferForm walletId={walletId} onDone={handleMoneyMoved} />
-      </div>
-
-      <section className="card">
-        <h2>Lịch sử giao dịch</h2>
-        <TransactionList transactions={transactions} loading={loading} />
-      </section>
-    </div>
+      {/* Duong dan la -> ve trang chu, va RequireAuth quyet dinh tiep. Khong de
+          nguoi dung nhin mot trang trang khong noi gi. */}
+      <Route path="*" element={<Navigate to="/" replace />} />
+    </Routes>
   )
 }
