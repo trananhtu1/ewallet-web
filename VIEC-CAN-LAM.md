@@ -13,11 +13,18 @@ src/lib/money.js       formatMoney · signOf · validateAmount
 src/lib/session.js     currentWalletId · setCurrentWalletId
 src/components/        WalletCard · DepositForm · TransferForm · TransactionList
 src/App.jsx            ghép lại + xử lý "backend đang ngủ dậy"
-src/index.css          toàn bộ style (không dùng thư viện CSS)
+src/index.css          bảng màu trong @theme + class của project
+vite.config.js         plugin Tailwind v4
 ```
 
 **Đã kiểm:** `npm run lint` sạch · `npm run build` sạch · Vite dev phục vụ được ·
 CORS đo hai chiều (origin đúng được cho qua, origin lạ bị **403**).
+
+> 🎨 **Tailwind v4 đã được thêm vào** (phiên song song, 27/08) — plugin của Vite, không có
+> `tailwind.config.js` cũng không có `postcss.config.js`, cấu hình nằm thẳng trong
+> `src/index.css` bằng `@theme`. Class cũ của project (`.page`, `.card`, `.button`, `.tx-list`…)
+> **vẫn còn nguyên** và bảng màu dùng chung, nên viết kiểu nào cũng không lệch màu.
+> Build sau khi thêm: CSS 9.12 kB (gzip 2.76 kB).
 
 **⚠️ CHƯA AI MỞ TRÊN TRÌNH DUYỆT.** Code biên dịch được không có nghĩa là nhìn được.
 Việc số 1 bên dưới là chuyện đó.
@@ -147,7 +154,8 @@ production. Hai thứ phải chỉnh:
 ## ❌ Đừng làm bây giờ
 
 Đăng ký / đăng nhập (**backend chưa có API**) · đổi mật khẩu · upload KYC · dark mode ·
-nhiều loại tiền tệ · phân trang số trang (1,2,3…) · thêm thư viện UI.
+nhiều loại tiền tệ · phân trang số trang (1,2,3…) · thêm **thư viện component** (shadcn, MUI,
+Ant…) — Tailwind đã đủ, kéo thêm bộ component là kéo thêm thứ phải học và phải bảo trì.
 
 > ROADMAP §"Quy tắc scope": *"cái này có làm CV mạnh hơn không? Không → không làm."*
 
