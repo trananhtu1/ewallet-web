@@ -1,3 +1,5 @@
+import clsx from 'clsx'
+
 import { formatMoney, signOf } from '../lib/money'
 
 const TYPE_LABEL = {
@@ -34,7 +36,7 @@ export default function TransactionList({ transactions, loading }) {
           </div>
 
           <div className="tx__right">
-            <span className={`tx__amount tx__amount--${tx.direction.toLowerCase()}`}>
+            <span className={clsx('tx__amount', tx.direction === 'IN' ? 'tx__amount--in' : 'tx__amount--out')}>
               {signOf(tx.direction)} {formatMoney(tx.amount)}
             </span>
             {/* status FAILED backend chua bao gio tra ve (con no REQUIRES_NEW),

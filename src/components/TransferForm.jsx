@@ -1,3 +1,4 @@
+import clsx from 'clsx'
 import { useState } from 'react'
 import { groupFieldErrors, transfer } from '../lib/api'
 import { validateAmount } from '../lib/money'
@@ -60,7 +61,7 @@ export default function TransferForm({ walletId, onDone }) {
       <label className="field">
         <span className="label">Ví đích</span>
         <input
-          className={fieldErrors.toWalletId ? 'input input--error' : 'input'}
+          className={clsx('input', fieldErrors.toWalletId && 'input--error')}
           value={toWalletId}
           onChange={(e) => setToWalletId(e.target.value)}
           placeholder="2"
@@ -75,7 +76,7 @@ export default function TransferForm({ walletId, onDone }) {
       <label className="field">
         <span className="label">Số tiền</span>
         <input
-          className={fieldErrors.amount ? 'input input--error' : 'input'}
+          className={clsx('input', fieldErrors.amount && 'input--error')}
           value={amount}
           onChange={(e) => setAmount(e.target.value)}
           placeholder="30000.00"

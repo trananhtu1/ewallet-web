@@ -1,3 +1,4 @@
+import clsx from 'clsx'
 import { useState } from 'react'
 import { deposit, groupFieldErrors } from '../lib/api'
 import { validateAmount } from '../lib/money'
@@ -44,7 +45,7 @@ export default function DepositForm({ walletId, onDone }) {
       <label className="field">
         <span className="label">Số tiền</span>
         <input
-          className={fieldErrors.amount ? 'input input--error' : 'input'}
+          className={clsx('input', fieldErrors.amount && 'input--error')}
           value={amount}
           onChange={(e) => setAmount(e.target.value)}
           placeholder="50000.00"
