@@ -1,10 +1,10 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useAuth } from '../auth/useAuth'
 import DepositForm from '../components/DepositForm'
 import TransactionList from '../components/TransactionList'
 import TransferForm from '../components/TransferForm'
 import WalletCard from '../components/WalletCard'
-import { getTransactions, getWallet } from '../lib/api'
+import { useGetTransactionsQuery, useGetWalletQuery } from '../store/walletApi'
 
 // Cho qua bay nhieu giay thi gan nhu chac chan backend dang ngu day chu khong
 // phai mang cham: goi luc backend da thuc chi mat chua toi 1 giay.
@@ -17,44 +17,23 @@ export default function WalletPage() {
   const { session, signOut } = useAuth()
   const walletId = session.walletId
 
-  const [wallet, setWallet] = useState(null)
-  const [transactions, setTransactions] = useState([])
-  const [loading, setLoading] = useState(true)
-  const [loadError, setLoadError] = useState(null)
+  // Hai query doc lap nhau -> RTK Query ban song song, khong xep hang.
+  //
+  // Bien mat so voi ban truoc: useEffect, AbortController, ba state
+  // (wallet/transactions/loadError) va ca ham reload(). RTK Query lo het -
+  // ke ca chuyen huy request luc unmount va bo qua ket qua ve muon.
+  const walletQuery = useGetWalletQuery(walletId)
+  const txQuery = useGetTransactionsQuery({ walletId, limit: 20 })
+
+  const loading = walletQuery.isLoading || txQuery.isLoading
+
+  // 401 KHONG hien ra o day: interceptor da goi sessionExpired -> phien bi xoa
+  // -> RequireAuth day ve /login. Bao loi cho mot man sap bien mat la lam
+  // nguoi dung hoang vi mot chuyen da duoc xu ly.
+  const rawError = walletQuery.error ?? txQuery.error
+  const loadError = rawError?.status === 401 ? null : rawError
+
   const [elapsed, setElapsed] = useState(0)
-
-  const reload = useCallback(
-    async (signal) => {
-      setLoadError(null)
-      try {
-        // Hai request doc lap nhau -> ban song song, khong xep hang.
-        const [walletData, txData] = await Promise.all([
-          getWallet(walletId, { signal }),
-          getTransactions(walletId, 20, { signal }),
-        ])
-        setWallet(walletData)
-        setTransactions(txData)
-      } catch (error) {
-        if (error.name === 'AbortError') return
-        // Token het han thi api() da goi setSessionExpiredHandler -> phien bi
-        // xoa -> RequireAuth day ve /login. Khong hien loi 401 o day lam gi.
-        if (error.status === 401) return
-        setLoadError(error)
-      } finally {
-        setLoading(false)
-      }
-    },
-    [walletId],
-  )
-
-  useEffect(() => {
-    // AbortController de huy request khi unmount. Thieu no, StrictMode goi
-    // effect 2 lan o dev -> 2 request, va request cu ve muon co the ghi de
-    // ket qua moi (race condition).
-    const controller = new AbortController()
-    reload(controller.signal)
-    return () => controller.abort()
-  }, [reload])
 
   // Dong ho chi chay trong luc con dang cho lan dau.
   useEffect(() => {
@@ -66,13 +45,6 @@ export default function WalletPage() {
     const timer = setInterval(() => setElapsed(Math.round((Date.now() - startedAt) / 1000)), 500)
     return () => clearInterval(timer)
   }, [loading])
-
-  // Nap/chuyen tien xong: response DA LA vi moi -> dung luon, khong goi lai
-  // GET /api/wallets/{id}. Nhung lich su thi phai lay lai vi co dong moi.
-  function handleMoneyMoved(updatedWallet) {
-    setWallet(updatedWallet)
-    getTransactions(walletId, 20).then(setTransactions).catch(() => {})
-  }
 
   const isWaking = loading && elapsed >= WAKE_HINT_AFTER_SECONDS
 
@@ -112,19 +84,22 @@ export default function WalletPage() {
         </p>
       )}
 
-      {/* Truyen thang `wallet`, KHONG phai `wallet ?? {}`. Cai `?? {}` cu bien
+      {/* Truyen thang `data`, KHONG phai `data ?? {}`. Cai `?? {}` cu bien
           "chua biet so du" thanh "so du bang 0" ngay tai day. */}
-      <WalletCard wallet={wallet} loading={loading} />
+      <WalletCard wallet={walletQuery.data} loading={loading} />
 
       <div className="form-grid">
-        <DepositForm walletId={walletId} onDone={handleMoneyMoved} />
-        <TransferForm walletId={walletId} onDone={handleMoneyMoved} />
+        {/* Khong con onDone: nap/chuyen xong, RTK Query tu ghi vi moi vao cache
+            va tu goi lai lich su giao dich - xem invalidatesTags trong
+            walletApi.js. Truoc day WalletPage phai tu lam ca hai viec do. */}
+        <DepositForm walletId={walletId} />
+        <TransferForm walletId={walletId} />
       </div>
 
       <section className="card">
         <h2>Lịch sử giao dịch</h2>
         <TransactionList
-          transactions={transactions}
+          transactions={txQuery.data ?? []}
           loading={loading}
           unavailable={Boolean(loadError)}
         />

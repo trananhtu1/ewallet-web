@@ -1,31 +1,17 @@
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, describe, expect, it } from 'vitest'
+import { fail, canceled, mockAdapter, networkDown, ok, restoreAdapter, sentBody } from '../test/axiosMock'
 import { ApiError, NetworkError, api, deposit, groupFieldErrors, transfer } from './api'
 
 /**
- * Bat lay doi so cua fetch de xem FE THUC SU gui gi len day.
+ * Bat lay config cua axios o tang adapter de xem FE THUC SU gui gi len day.
  *
- * ⚠️ Cac test duoi PHAI await truoc khi doc fetchMock. Tu khi co refresh token,
- * api() co mot `await` (kiem/doi token) TRUOC khi goi fetch - nen o tick dau tien
- * fetch chua he duoc goi, va fetchMock.mock.calls[0] con la undefined.
+ * ⚠️ Cac test duoi PHAI await truoc khi doc adapter. Tu khi co refresh token,
+ * api() co mot `await` (kiem/doi token) TRUOC khi request roi may - nen o tick
+ * dau tien adapter chua he duoc goi, va mock.calls[0] con la undefined.
  */
-function mockFetch(response) {
-  const fetchMock = vi.fn().mockResolvedValue(response)
-  vi.stubGlobal('fetch', fetchMock)
-  return fetchMock
-}
+const okWallet = ok({ id: 1, balance: '300000.50', version: 1 })
 
-const okWallet = {
-  ok: true,
-  status: 200,
-  json: async () => ({ id: 1, balance: '300000.50', version: 1 }),
-}
-
-/** Dung khuon loi that cua backend - moi loi, moi endpoint deu mot hinh dang. */
-function errorResponse(status, body) {
-  return { ok: false, status, json: async () => body }
-}
-
-afterEach(() => vi.unstubAllGlobals())
+afterEach(restoreAdapter)
 
 describe('gui tien len server', () => {
   /**
@@ -34,12 +20,15 @@ describe('gui tien len server', () => {
    * money.js canh giu chieu NHAN VE. Cho nay canh chieu GUI LEN - va do la cho
    * tung sai: `Number(amount)` lam hong so tien ngay truoc khi roi trinh duyet,
    * truoc ca khi backend kip nhin thay no.
+   *
+   * <p>axios KHONG cuu duoc loi do: no JSON.stringify cai object minh dua cho,
+   * nen mot so da hong tu truoc thi no gui di dung so hong ay.
    */
   it('gui so tien duoi dang CHUOI, khong phai so', async () => {
-    const fetchMock = mockFetch(okWallet)
+    const adapter = mockAdapter(okWallet)
     await deposit(1, '12345678901234567.89')
 
-    const body = JSON.parse(fetchMock.mock.calls[0][1].body)
+    const body = sentBody(adapter)
 
     expect(body.amount).toBe('12345678901234567.89')
     expect(typeof body.amount).toBe('string')
@@ -49,25 +38,23 @@ describe('gui tien len server', () => {
   })
 
   it('van gui ID vi duoi dang so', async () => {
-    const fetchMock = mockFetch(okWallet)
+    const adapter = mockAdapter(okWallet)
     await transfer('1', '2', '30000.00')
 
-    const body = JSON.parse(fetchMock.mock.calls[0][1].body)
-
-    expect(body).toEqual({ fromWalletId: 1, toWalletId: 2, amount: '30000.00' })
+    expect(sentBody(adapter)).toEqual({ fromWalletId: 1, toWalletId: 2, amount: '30000.00' })
   })
 
   it('cat khoang trang thua nguoi dung go vao', async () => {
-    const fetchMock = mockFetch(okWallet)
+    const adapter = mockAdapter(okWallet)
     await deposit(1, '  50000.00  ')
 
-    expect(JSON.parse(fetchMock.mock.calls[0][1].body).amount).toBe('50000.00')
+    expect(sentBody(adapter).amount).toBe('50000.00')
   })
 })
 
 describe('doc loi tu backend', () => {
   it('giu code, status va fieldErrors tu response', async () => {
-    mockFetch(errorResponse(400, {
+    mockAdapter(fail(400, {
       status: 400,
       code: 'VALIDATION_FAILED',
       message: 'Dữ liệu gửi lên không hợp lệ',
@@ -86,9 +73,9 @@ describe('doc loi tu backend', () => {
   })
 
   it('4xx KHONG duoc coi la loi mang', async () => {
-    // fetch chi nem khi mang chet. 409 thi no resolve binh thuong - day la ly do
-    // api() khong the dua vao try/catch de biet request that bai.
-    mockFetch(errorResponse(409, { status: 409, code: 'INSUFFICIENT_FUNDS', message: 'Số dư không đủ' }))
+    // Server CO tra loi, chi la tra ve loi - day la ly do api() khong the dua
+    // vao try/catch de biet request that bai.
+    mockAdapter(fail(409, { status: 409, code: 'INSUFFICIENT_FUNDS', message: 'Số dư không đủ' }))
 
     const error = await api('/api/transfers').catch((e) => e)
 
@@ -98,7 +85,7 @@ describe('doc loi tu backend', () => {
   })
 
   it('phan biet mang chet voi loi server tra ve', async () => {
-    vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new TypeError('Failed to fetch')))
+    mockAdapter(networkDown())
 
     const error = await api('/api/wallets/1').catch((e) => e)
 
@@ -107,25 +94,33 @@ describe('doc loi tu backend', () => {
   })
 
   it('khong nuot AbortError - huy request khong phai la that bai', async () => {
-    const aborted = new DOMException('The operation was aborted.', 'AbortError')
-    vi.stubGlobal('fetch', vi.fn().mockRejectedValue(aborted))
+    mockAdapter(canceled())
 
     const error = await api('/api/wallets/1').catch((e) => e)
 
-    // App.jsx dua vao dung dieu nay de bo qua request bi huy luc unmount.
+    // Giu ten 'AbortError' chu khong phai 'CanceledError' rieng cua axios:
+    // do la hop dong cu ma cac cho khac trong app dang doc.
     expect(error.name).toBe('AbortError')
     expect(error).not.toBeInstanceOf(NetworkError)
   })
 
   it('chiu duoc response loi khong phai JSON', async () => {
     // Vi du that: Render tra ve trang HTML 502 luc service dang khoi dong lai.
-    mockFetch({ ok: false, status: 502, json: async () => { throw new SyntaxError('not json') } })
+    mockAdapter(fail(502, '<html><body>502 Bad Gateway</body></html>'))
 
     const error = await api('/api/wallets/1').catch((e) => e)
 
     expect(error).toBeInstanceOf(ApiError)
     expect(error.code).toBe('UNKNOWN')
     expect(error.message).toBe('Có lỗi xảy ra, thử lại sau')
+  })
+
+  it('204 khong body tra ve null, khong phai chuoi rong', async () => {
+    // axios dua 204 ve `data: ''`. Chuoi rong la mot GIA TRI - de nguyen thi
+    // cho goi phai di kiem `data === ''` thay vi chi kiem null.
+    mockAdapter(ok('', 204))
+
+    expect(await api('/api/auth/logout', { method: 'POST' })).toBeNull()
   })
 })
 

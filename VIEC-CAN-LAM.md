@@ -177,11 +177,37 @@ production. Hai thứ phải chỉnh:
 ## ❌ Đừng làm bây giờ
 
 ~~Đăng ký / đăng nhập~~ — **đã xong 27/08**, backend có API rồi ·
-đổi mật khẩu · upload KYC · dark mode ·
-nhiều loại tiền tệ · phân trang số trang (1,2,3…) · thêm **thư viện component** (shadcn, MUI,
-Ant…) — Tailwind đã đủ, kéo thêm bộ component là kéo thêm thứ phải học và phải bảo trì.
+đổi mật khẩu · upload KYC · dark mode · nhiều loại tiền tệ · phân trang số trang (1,2,3…)
 
 > ROADMAP §"Quy tắc scope": *"cái này có làm CV mạnh hơn không? Không → không làm."*
+
+### 🔄 Một quyết định đã ĐỔI — ghi lại chứ không lặng lẽ bỏ
+
+Dòng này trước đây nằm trong danh sách **đừng làm**:
+
+> ~~thêm **thư viện component** (shadcn, MUI, Ant…) — Tailwind đã đủ, kéo thêm bộ component là
+> kéo thêm thứ phải học và phải bảo trì.~~
+
+**28/08 đã làm ngược lại** — thêm `shadcn` + `radix-ui` + `lucide-react` + `sonner`. Ghi lại
+đây thay vì xoá dòng cũ, vì một quyết định bị đảo mà không ai giải thích thì lần sau lại đem
+ra tranh luận từ đầu.
+
+⚠️ **Nhưng lý do cũ vẫn đúng một phần, và số đo cho thấy điều đó:**
+
+| | Trước | Sau |
+|---|---|---|
+| JS | 241.71 kB *(77.16 gzip)* | **417.07 kB** *(135.90 gzip)* |
+| CSS | 7.70 kB *(2.48 gzip)* | **40.23 kB** *(8.16 gzip)* |
+
+Và **7 trong 8** component sinh ra ở `src/components/ui/` **chưa file nào của app import**:
+`button` · `card` · `input` · `label` · `skeleton` · `table` · `dropdown-menu`. Vite tree-shake
+nên chúng **không vào bundle**, nhưng vẫn là code phải đọc và phải bảo trì.
+
+**Việc cần làm:** hoặc dùng chúng thật (đổi các form sang `<Button>`, `<Input>`, `<Card>`),
+hoặc **xoá đi**. Để nguyên là tệ nhất — nó làm người đọc tưởng app đã chuyển sang shadcn
+trong khi các trang vẫn dùng class `.card` / `.input` / `.button` viết tay.
+
+*(Thứ thật sự đang dùng: `sonner` cho toast, `lucide-react` cho icon trong hai form tiền.)*
 
 ---
 
