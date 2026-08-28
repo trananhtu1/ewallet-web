@@ -1,10 +1,19 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { authToken, clearSession, currentWalletId, readSession, saveSession } from './session'
+import {
+  authToken,
+  clearSession,
+  currentWalletId,
+  isAccessTokenFresh,
+  readSession,
+  saveSession,
+} from './session'
 
-// AuthResponse that tu POST /api/auth/login - expiresInSeconds = 7200.
+// AuthResponse that tu POST /api/auth/login. expiresInSeconds = 900 (15 phut) -
+// truoc day la 7200, doi cung luc voi refresh token.
 const AUTH_RESPONSE = {
   token: 'eyJhbGciOiJIUzI1NiJ9.abc.def',
-  expiresInSeconds: 7200,
+  refreshToken: 'aG9hbi10b2FuLW5nYXUtbmhpZW4',
+  expiresInSeconds: 900,
   walletId: 4,
   fullName: 'Richard Tran',
 }
@@ -55,20 +64,40 @@ describe('het han', () => {
 
     saveSession(AUTH_RESPONSE)
 
-    // 7200 giay = 2 gio ke tu luc luu.
-    expect(readSession().expiresAt).toBe(new Date('2026-08-27T12:00:00Z').getTime())
+    // 900 giay = 15 phut ke tu luc luu.
+    expect(readSession().expiresAt).toBe(new Date('2026-08-27T10:15:00Z').getTime())
   })
 
-  it('token qua han thi coi nhu chua dang nhap', () => {
+  /**
+   * ⭐ Doi hanh vi co chu dich, va day la test ghi lai dieu do.
+   *
+   * Truoc khi co refresh token: access token het han = het phien, xoa luon.
+   * Gio: het han chi co nghia la "phai doi token", con phien thi VAN CON - vi
+   * refresh token trong do song 7 ngay.
+   *
+   * Xoa phien o day thi nguoi dung bi da ra man dang nhap moi 15 phut, va cai
+   * refresh token nam ngay ben canh khong bao gio duoc dung toi.
+   */
+  it('access token qua han thi PHIEN VAN CON - chi la phai doi token', () => {
     vi.useFakeTimers()
     vi.setSystemTime(new Date('2026-08-27T10:00:00Z'))
     saveSession(AUTH_RESPONSE)
 
-    // Tai lai trang sau 3 tieng.
+    // Tai lai trang sau 3 tieng - access token het tu lau.
     vi.setSystemTime(new Date('2026-08-27T13:00:00Z'))
 
+    expect(readSession()).not.toBeNull()
+    expect(isAccessTokenFresh(readSession())).toBe(false)
+  })
+
+  it('phien khong co refreshToken thi khong cuu duoc - coi nhu chua dang nhap', () => {
+    // Hinh dang phien luu tu ban FE cu, truoc khi co refresh token.
+    localStorage.setItem(
+      'ewallet.session',
+      JSON.stringify({ token: 'chi-co-access', walletId: 4, expiresAt: Date.now() + 900_000 }),
+    )
+
     expect(readSession()).toBeNull()
-    // Va don luon, khong de rac nam lai trong localStorage.
     expect(localStorage.getItem('ewallet.session')).toBeNull()
   })
 
@@ -84,18 +113,29 @@ describe('het han', () => {
     vi.setSystemTime(new Date('2026-08-27T10:00:00Z'))
     saveSession(AUTH_RESPONSE)
 
-    // Con 5 giay nua moi den moc 12:00:00 -> da phai coi la het han.
-    vi.setSystemTime(new Date('2026-08-27T11:59:55Z'))
-    expect(readSession()).toBeNull()
+    // Con 5 giay nua moi den moc 10:15:00 -> da phai coi la het han.
+    vi.setSystemTime(new Date('2026-08-27T10:14:55Z'))
+    expect(isAccessTokenFresh(readSession())).toBe(false)
   })
 
-  it('con nhieu thoi gian thi van hop le', () => {
+  it('con nhieu thoi gian thi van con tuoi', () => {
     vi.useFakeTimers()
     vi.setSystemTime(new Date('2026-08-27T10:00:00Z'))
     saveSession(AUTH_RESPONSE)
 
-    vi.setSystemTime(new Date('2026-08-27T11:30:00Z'))
-    expect(readSession()).not.toBeNull()
+    vi.setSystemTime(new Date('2026-08-27T10:05:00Z'))
+    expect(isAccessTokenFresh(readSession())).toBe(true)
+  })
+
+  /**
+   * /api/auth/refresh KHONG tra ve fullName - backend bo di co y, client da biet
+   * roi. Ghi de bang undefined thi header se hien "undefined · Vi #4".
+   */
+  it('giu lai fullName khi response doi token khong co truong do', () => {
+    saveSession(AUTH_RESPONSE)
+    saveSession({ token: 'moi', refreshToken: 'moi', expiresInSeconds: 900, walletId: 4 })
+
+    expect(readSession().fullName).toBe('Richard Tran')
   })
 })
 

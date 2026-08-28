@@ -1,7 +1,13 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { ApiError, NetworkError, api, deposit, groupFieldErrors, transfer } from './api'
 
-/** Bat lay doi so cua fetch de xem FE THUC SU gui gi len day. */
+/**
+ * Bat lay doi so cua fetch de xem FE THUC SU gui gi len day.
+ *
+ * ⚠️ Cac test duoi PHAI await truoc khi doc fetchMock. Tu khi co refresh token,
+ * api() co mot `await` (kiem/doi token) TRUOC khi goi fetch - nen o tick dau tien
+ * fetch chua he duoc goi, va fetchMock.mock.calls[0] con la undefined.
+ */
 function mockFetch(response) {
   const fetchMock = vi.fn().mockResolvedValue(response)
   vi.stubGlobal('fetch', fetchMock)
@@ -29,9 +35,9 @@ describe('gui tien len server', () => {
    * tung sai: `Number(amount)` lam hong so tien ngay truoc khi roi trinh duyet,
    * truoc ca khi backend kip nhin thay no.
    */
-  it('gui so tien duoi dang CHUOI, khong phai so', () => {
+  it('gui so tien duoi dang CHUOI, khong phai so', async () => {
     const fetchMock = mockFetch(okWallet)
-    deposit(1, '12345678901234567.89')
+    await deposit(1, '12345678901234567.89')
 
     const body = JSON.parse(fetchMock.mock.calls[0][1].body)
 
@@ -42,18 +48,18 @@ describe('gui tien len server', () => {
     expect(body.amount).not.toBe(12345678901234568)
   })
 
-  it('van gui ID vi duoi dang so', () => {
+  it('van gui ID vi duoi dang so', async () => {
     const fetchMock = mockFetch(okWallet)
-    transfer('1', '2', '30000.00')
+    await transfer('1', '2', '30000.00')
 
     const body = JSON.parse(fetchMock.mock.calls[0][1].body)
 
     expect(body).toEqual({ fromWalletId: 1, toWalletId: 2, amount: '30000.00' })
   })
 
-  it('cat khoang trang thua nguoi dung go vao', () => {
+  it('cat khoang trang thua nguoi dung go vao', async () => {
     const fetchMock = mockFetch(okWallet)
-    deposit(1, '  50000.00  ')
+    await deposit(1, '  50000.00  ')
 
     expect(JSON.parse(fetchMock.mock.calls[0][1].body).amount).toBe('50000.00')
   })

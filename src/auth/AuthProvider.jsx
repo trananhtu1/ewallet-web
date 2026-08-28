@@ -29,9 +29,23 @@ export function AuthProvider({ children }) {
     setSession(saveSession(await apiClient.register(email, password, fullName)))
   }, [])
 
-  const signOut = useCallback(() => {
-    // Khong co POST /api/auth/logout: JWT la stateless, server khong giu phien
-    // nao de xoa. Dang xuat = vut token o phia client.
+  const signOut = useCallback(async () => {
+    // Bao server thu hoi refresh token TRUOC, roi moi xoa o client.
+    //
+    // Truoc day o day co mot comment noi "JWT la stateless, server khong giu
+    // phien nao de xoa" - dung voi JWT, nhung tu khi co refresh token thi server
+    // CO giu, va khong bao thi cai token do con song 7 ngay.
+    //
+    // Nuot loi co y: dang xuat phai LUON thanh cong o phia nguoi dung. Mat mang
+    // hay server chet ma khong cho ra man dang nhap la mot cach lam nguoi ta
+    // hoang. Doi lai: refresh token khong bi thu hoi - chap nhan, vi truong hop
+    // do dung bang hanh vi cu.
+    try {
+      await apiClient.logout()
+    } catch {
+      // khong lam gi - xem tren
+    }
+
     clearSession()
     setSession(null)
   }, [])
