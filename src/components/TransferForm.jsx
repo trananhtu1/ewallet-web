@@ -67,10 +67,13 @@ export default function TransferForm({ walletId, onDone }) {
           placeholder="2"
           inputMode="numeric"
           disabled={busy}
+          aria-invalid={Boolean(fieldErrors.toWalletId)}
         />
-        {fieldErrors.toWalletId?.map((message) => (
-          <span key={message} className="error">{message}</span>
-        ))}
+        <span className="field__errors" aria-live="polite">
+          {fieldErrors.toWalletId?.map((message) => (
+            <span key={message} className="error">{message}</span>
+          ))}
+        </span>
       </label>
 
       <label className="field">
@@ -82,13 +85,18 @@ export default function TransferForm({ walletId, onDone }) {
           placeholder="30000.00"
           inputMode="decimal"
           disabled={busy}
+          aria-invalid={Boolean(fieldErrors.amount)}
         />
-        {fieldErrors.amount?.map((message) => (
-          <span key={message} className="error">{message}</span>
-        ))}
+        <span className="field__errors" aria-live="polite">
+          {fieldErrors.amount?.map((message) => (
+            <span key={message} className="error">{message}</span>
+          ))}
+        </span>
       </label>
 
-      {formError && <p className="error error--form">{formError}</p>}
+      {/* INSUFFICIENT_FUNDS bao o day chu khong duoi o input, va no la loi
+          nguoi dung can nghe nhat -> aria-live giu san vung nay tu dau. */}
+      <p className="error error--form" aria-live="polite">{formError}</p>
 
       <button className="button button--primary" disabled={busy}>
         {busy ? 'Đang chuyển…' : 'Chuyển tiền'}
