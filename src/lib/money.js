@@ -40,7 +40,16 @@ export function validateAmount(input) {
 
   if (text === '') return 'Chưa nhập số tiền'
   if (!/^\d+(\.\d{1,2})?$/.test(text)) return 'Số tiền chỉ được có tối đa 2 chữ số thập phân'
-  if (Number(text) < 0.01) return 'Số tiền tối thiểu là 0.01'
+
+  // Truoc day dong nay la `Number(text) < 0.01` - chinh cai Number() ma dau file
+  // nay cam. No khong lam sai KET QUA (so sanh do lon voi 0.01 thi double du
+  // chinh xac), nhung no la mot qua min: ai do doi luat sau nay se coi Number()
+  // o day la duoc phep va mang no sang cho tinh tien that.
+  //
+  // Regex tren da bao dam toi da 2 chu so thap phan, nen so duong nho nhat viet
+  // ra duoc chinh la 0.01. Suy ra: nho hon 0.01 <=> moi chu so deu la 0.
+  // Kiem bang chuoi, khong dong toi so thuc.
+  if (/^0+(\.0{1,2})?$/.test(text)) return 'Số tiền tối thiểu là 0.01'
   if (text.split('.')[0].length > 17) return 'Số tiền quá lớn'
 
   return null
