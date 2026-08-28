@@ -17,10 +17,16 @@ const STORAGE_KEY = 'ewallet.session'
 const EXPIRY_SAFETY_MS = 10_000
 
 /**
- * Doc phien dang luu. Tra ve null neu chua dang nhap HOAC token da het han.
+ * Doc phien dang luu. Tra ve null neu chua dang nhap.
  *
- * `expiresInSeconds` co trong AuthResponse chinh la de lam viec nay: biet truoc
- * khi nao phai dang nhap lai, thay vi doi toi luc an 401 giua mot thao tac.
+ * ⚠️ KHONG con xoa phien khi access token het han.
+ *
+ * Truoc day access token song 2 gio va la thu duy nhat co, nen het han = het
+ * phien. Gio no song 15 PHUT va di kem mot refresh token song 7 NGAY: het han
+ * chi co nghia la "phai doi token", khong phai "phai dang nhap lai".
+ *
+ * Xoa phien o day thi nguoi dung bi da ra man dang nhap moi 15 phut, va cai
+ * refresh token nam ngay trong do khong bao gio duoc dung toi.
  */
 export function readSession() {
   let raw
@@ -41,7 +47,9 @@ export function readSession() {
     return null
   }
 
-  if (!session?.token || Date.now() >= session.expiresAt - EXPIRY_SAFETY_MS) {
+  // Khong con refreshToken thi phien nay het duong cuu: access token roi cung
+  // het han va khong co gi de doi lay cai moi.
+  if (!session?.token || !session?.refreshToken) {
     clearSession()
     return null
   }
@@ -49,12 +57,26 @@ export function readSession() {
   return session
 }
 
-/** Nhan nguyen AuthResponse tu POST /api/auth/login hoac /register. */
-export function saveSession({ token, expiresInSeconds, walletId, fullName }) {
+/** Access token con dung duoc khong. Het han KHONG dong nghia het phien - xem readSession. */
+export function isAccessTokenFresh(session) {
+  return Boolean(session) && Date.now() < session.expiresAt - EXPIRY_SAFETY_MS
+}
+
+/**
+ * Nhan nguyen AuthResponse tu /login, /register HOAC /refresh.
+ *
+ * `fullName` khong co trong response cua /refresh (backend bo di co y - client
+ * da biet roi). Nen giu lai gia tri cu thay vi ghi de bang undefined, neu khong
+ * thi sau lan doi token dau tien header se hien "undefined · Vi #3".
+ */
+export function saveSession({ token, refreshToken, expiresInSeconds, walletId, fullName }) {
+  const previous = readSession()
+
   const session = {
     token,
+    refreshToken,
     walletId,
-    fullName,
+    fullName: fullName ?? previous?.fullName,
     // Luu MOC HET HAN chu khong luu so giay con lai: so giay con lai tinh tu
     // luc nao? Sau khi tai lai trang thi khong ai biet nua.
     expiresAt: Date.now() + expiresInSeconds * 1000,

@@ -30,6 +30,7 @@ const json = (status, body) => () => ({ ok: status < 400, status, json: async ()
 
 const AUTH_OK = json(200, {
   token: 'token-abc',
+  refreshToken: 'rt-token-abc',
   expiresInSeconds: 7200,
   walletId: 4,
   fullName: 'Richard Tran',
@@ -50,7 +51,7 @@ describe('cong chan route', () => {
   })
 
   it('da dang nhap thi vao / thay thang man vi', async () => {
-    saveSession({ token: 'token-abc', expiresInSeconds: 7200, walletId: 4, fullName: 'Richard Tran' })
+    saveSession({ token: 'token-abc', refreshToken: 'rt-token-abc', expiresInSeconds: 7200, walletId: 4, fullName: 'Richard Tran' })
     routeFetch({ '/api/wallets/4/transactions': NO_TRANSACTIONS, '/api/wallets/4': WALLET_OK })
 
     renderApp('/')
@@ -60,7 +61,7 @@ describe('cong chan route', () => {
   })
 
   it('da dang nhap ma vao /login thi bi day ve man vi', async () => {
-    saveSession({ token: 'token-abc', expiresInSeconds: 7200, walletId: 4, fullName: 'Richard Tran' })
+    saveSession({ token: 'token-abc', refreshToken: 'rt-token-abc', expiresInSeconds: 7200, walletId: 4, fullName: 'Richard Tran' })
     routeFetch({ '/api/wallets/4/transactions': NO_TRANSACTIONS, '/api/wallets/4': WALLET_OK })
 
     renderApp('/login')
@@ -139,7 +140,7 @@ describe('dang nhap', () => {
 
 describe('dang xuat', () => {
   it('bam dang xuat thi ve man dang nhap va xoa token', async () => {
-    saveSession({ token: 'token-abc', expiresInSeconds: 7200, walletId: 4, fullName: 'Richard Tran' })
+    saveSession({ token: 'token-abc', refreshToken: 'rt-token-abc', expiresInSeconds: 7200, walletId: 4, fullName: 'Richard Tran' })
     routeFetch({ '/api/wallets/4/transactions': NO_TRANSACTIONS, '/api/wallets/4': WALLET_OK })
 
     renderApp('/')

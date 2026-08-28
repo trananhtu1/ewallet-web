@@ -1,4 +1,4 @@
-import { authToken } from './session'
+import { clearSession, isAccessTokenFresh, readSession, saveSession } from './session'
 
 // Vite chi day ra trinh duyet nhung bien bat dau bang VITE_.
 // Moi thu co tien to VITE_ deu la CONG KHAI - ai mo DevTools cung doc duoc.
@@ -50,10 +50,95 @@ export class NetworkError extends Error {
   }
 }
 
-export async function api(path, options = {}) {
+/**
+ * ⭐ CHO DE TU BAN VAO CHAN NHAT CA FILE, va no o day chu khong o backend.
+ *
+ * Backend xoay vong refresh token: moi cai dung duoc DUNG MOT LAN, va neu mot
+ * token da dung duoc trinh ra lan nua thi no coi do la bang chung co hai ban sao
+ * -> THU HOI CA CHUOI, nguoi dung bi da ra.
+ *
+ * Ma WalletPage goi hai request SONG SONG bang Promise.all. Neu ca hai cung thay
+ * token het han va cung goi /refresh voi cung mot refresh token thi chinh client
+ * tu kich hoat co che do. Da do that tren backend:
+ *
+ *   request 1 -> 200
+ *   request 2 -> 401
+ *   audit_log -> REFRESH_TOKEN_REUSED, detectedBy CONCURRENT_CLAIM, revokedCount 2
+ *
+ * Nen: MOT lan doi token tai mot thoi diem. Cac lo'i goi den sau bam vao dung
+ * cai Promise dang chay thay vi mo them mot lan doi nua.
+ */
+let refreshInFlight = null
+
+function refreshOnce() {
+  refreshInFlight ??= doRefresh().finally(() => {
+    // Xoa NGAY khi xong, du thanh hay bai. Giu lai thi lan het han sau se dung
+    // lai ket qua cu - tuc la mot token da chet.
+    refreshInFlight = null
+  })
+
+  return refreshInFlight
+}
+
+async function doRefresh() {
+  const session = readSession()
+  if (!session?.refreshToken) throw new ApiError(null, 401)
+
+  // Goi thang fetch, KHONG qua api(): api() se lai di kiem token va co the goi
+  // refresh lan nua - mot vong lap khong loi thoat.
+  const response = await fetch(BASE_URL + '/api/auth/refresh', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ refreshToken: session.refreshToken }),
+  })
+
+  const body = await response.json().catch(() => null)
+  if (!response.ok) throw new ApiError(body, response.status)
+
+  return saveSession(body).token
+}
+
+/**
+ * Token de gan vao request nay - doi truoc neu can.
+ *
+ * Doi CHU DONG khi sap het han, thay vi doi toi luc an 401 roi thu lai. Ly do
+ * khong phai gon hon ma la it duong hon: mot request POST /transfers bi 401 roi
+ * thu lai la mot lenh chuyen tien duoc gui HAI LAN. Idempotency-Key che duoc,
+ * nhung khong dua vao no thi tot hon.
+ */
+async function freshToken() {
+  const session = readSession()
+  if (!session) return null
+  if (isAccessTokenFresh(session)) return session.token
+
+  return refreshOnce()
+}
+
+export async function api(path, { skipAuth = false, ...options } = {}) {
   // DUNG MOT CHO gan token cho moi request. Doi cach xac thuc thi sua o day,
   // khong phai di tim tung cho goi API.
-  const token = authToken()
+  //
+  // skipAuth cho /login va /register: chung KHONG can token, va neu con mot phien
+  // cu da het han thi goi freshToken() se di doi token truoc khi dang nhap -
+  // mot vong goi mang vo nghia, va no co the that bai roi keo theo ca lan dang
+  // nhap that bai.
+  let token = null
+  if (!skipAuth) {
+    try {
+      token = await freshToken()
+    } catch {
+      // Doi token that bai: refresh token het han, bi thu hoi, hoac ca chuoi vua
+      // bi giet. Khong con duong nao ngoai dang nhap lai.
+      //
+      // TU xoa phien o day, khong cho onSessionExpired() lam ho. Handler do la
+      // de giao dien PHAN UNG (dieu huong ve /login); con viec phien nay da chet
+      // thi tang nay biet chac chan, va biet truoc. Trong cay vao mot handler co
+      // duoc dang ky hay khong la de mot phien chet nam lai trong localStorage.
+      clearSession()
+      onSessionExpired()
+      throw new ApiError({ code: 'SESSION_EXPIRED' }, 401)
+    }
+  }
 
   let response
   try {
@@ -98,14 +183,27 @@ export async function api(path, options = {}) {
 export const register = (email, password, fullName) =>
   api('/api/auth/register', {
     method: 'POST',
+    skipAuth: true,
     body: JSON.stringify({ email, password, fullName }),
   })
 
 export const login = (email, password) =>
   api('/api/auth/login', {
     method: 'POST',
+    skipAuth: true,
     body: JSON.stringify({ email, password }),
   })
+
+/**
+ * Dang xuat THAT SU - thu hoi refresh token o phia server.
+ *
+ * Truoc day "dang xuat" chi la vut token o client, nghia la ai da sao chep no ra
+ * van dung tiep duoc het han. Gio refresh token chet han tren server, va ke do
+ * chi con dung duoc toi khi access token het - toi da 15 phut.
+ *
+ * Tra ve 204, khong co body.
+ */
+export const logout = () => api('/api/auth/logout', { method: 'POST' })
 
 export const getWallet = (walletId, options) => api(`/api/wallets/${walletId}`, options)
 

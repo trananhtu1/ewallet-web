@@ -13,6 +13,7 @@ const AUTH_RESPONSE = {
   status: 200,
   json: async () => ({
     token: 'token-abc',
+    refreshToken: 'rt-token-abc',
     expiresInSeconds: 7200,
     walletId: 4,
     fullName: 'Richard Tran',
@@ -35,7 +36,7 @@ afterEach(() => {
 
 describe('gan token vao request', () => {
   it('co phien thi gan Authorization: Bearer', async () => {
-    saveSession({ token: 'token-abc', expiresInSeconds: 7200, walletId: 4, fullName: 'R' })
+    saveSession({ token: 'token-abc', refreshToken: 'rt-token-abc', expiresInSeconds: 7200, walletId: 4, fullName: 'R' })
     const fetchMock = mockFetch({ ok: true, status: 200, json: async () => ({}) })
 
     await api('/api/wallets/4')
@@ -55,7 +56,7 @@ describe('gan token vao request', () => {
   it('token het han thi khong gan nua', async () => {
     vi.useFakeTimers()
     vi.setSystemTime(new Date('2026-08-27T10:00:00Z'))
-    saveSession({ token: 'token-cu', expiresInSeconds: 7200, walletId: 4, fullName: 'R' })
+    saveSession({ token: 'token-cu', refreshToken: 'rt-token-cu', expiresInSeconds: 7200, walletId: 4, fullName: 'R' })
     vi.setSystemTime(new Date('2026-08-27T13:00:00Z'))
 
     const fetchMock = mockFetch({ ok: true, status: 200, json: async () => ({}) })
@@ -78,7 +79,7 @@ describe('gan token vao request', () => {
  */
 describe('hai loai 401', () => {
   it('401 khi DANG co token = phien het han -> bao ra ngoai', async () => {
-    saveSession({ token: 'token-abc', expiresInSeconds: 7200, walletId: 4, fullName: 'R' })
+    saveSession({ token: 'token-abc', refreshToken: 'rt-token-abc', expiresInSeconds: 7200, walletId: 4, fullName: 'R' })
 
     const onExpired = vi.fn()
     setSessionExpiredHandler(onExpired)
