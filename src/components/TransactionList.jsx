@@ -19,8 +19,16 @@ function formatTime(iso) {
   })
 }
 
-export default function TransactionList({ transactions, loading }) {
+export default function TransactionList({ transactions, loading, unavailable = false }) {
   if (loading) return <p className="muted">Đang tải lịch sử…</p>
+
+  // Cung mot cai bay voi so du: KHONG lay duoc lich su khong phai la KHONG CO
+  // giao dich nao. Ban truoc, tat backend roi tai lai trang thi vi da co 2 giao
+  // dich van hien "Chua co giao dich nao. Nap tien de bat dau." - vua sai vua
+  // xui nguoi dung nap them tien vao mot he thong dang hong.
+  if (unavailable) {
+    return <p className="muted">Không tải được lịch sử giao dịch.</p>
+  }
 
   if (transactions.length === 0) {
     return <p className="muted">Chưa có giao dịch nào. Nạp tiền để bắt đầu.</p>

@@ -83,6 +83,31 @@ describe('validateAmount', () => {
   it('chan so tien duoi muc toi thieu', () => {
     expect(validateAmount('0')).toBe('Số tiền tối thiểu là 0.01')
     expect(validateAmount('0.00')).toBe('Số tiền tối thiểu là 0.01')
+
+    // Bien: 0.0 va 000 cung la khong dong. Va 0.01 la so duong nho nhat viet
+    // ra duoc voi 2 chu so thap phan - no PHAI qua.
+    expect(validateAmount('0.0')).toBe('Số tiền tối thiểu là 0.01')
+    expect(validateAmount('000')).toBe('Số tiền tối thiểu là 0.01')
+    expect(validateAmount('0.01')).toBeNull()
+    expect(validateAmount('0.10')).toBeNull()
+  })
+
+  /**
+   * Dau file money.js ghi: khong duoc goi Number() o bat cu buoc nao. Test nay
+   * giu loi hua do bang cach kiem mot so lon hon suc chua an toan cua double -
+   * neu ai do mang Number() tro lai, cho nay khong nhat thiet vo ngay, nhung no
+   * la cho de dat mot cai moc de nguoi doc thay luat.
+   */
+  it('so 17 chu so khong bi lam tron tren duong di', () => {
+    // Chinh con so trong cau chuyen BigDecimal-qua-JSON: 17 chu so phan nguyen
+    // + 2 chu so thap phan = vua khop NUMERIC(19,2), nen no HOP LE.
+    // Number('12345678901234567.89') se ra 12345678901234568 - sai ca xu lan
+    // hang don vi. Ham nay khong duoc phep dung toi no, va test giu dieu do.
+    expect(validateAmount('12345678901234567.89')).toBeNull()
+    expect(validateAmount('99999999999999999')).toBeNull()
+
+    // Them mot chu so nua thi vuot NUMERIC(19,2).
+    expect(validateAmount('123456789012345678.89')).toBe('Số tiền quá lớn')
   })
 
   it('chan qua 17 chu so phan nguyen', () => {

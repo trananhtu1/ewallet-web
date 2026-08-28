@@ -25,6 +25,19 @@ describe('TransactionList', () => {
     expect(screen.getByText(/Chưa có giao dịch nào/)).toBeInTheDocument()
   })
 
+  /**
+   * Cung mot cai bay voi so du: khong tai duoc lich su KHONG PHAI la chua co
+   * giao dich nao. Do that tren trinh duyet: tat backend, tai lai trang, mot vi
+   * dang co 2 giao dich van hien "Chua co giao dich nao. Nap tien de bat dau."
+   * - vua sai, vua xui nguoi dung bo them tien vao he thong dang hong.
+   */
+  it('khong noi "chua co giao dich" khi that ra la khong tai duoc', () => {
+    render(<TransactionList transactions={[]} loading={false} unavailable />)
+
+    expect(screen.queryByText(/Chưa có giao dịch nào/)).not.toBeInTheDocument()
+    expect(screen.getByText(/Không tải được lịch sử/)).toBeInTheDocument()
+  })
+
   it('goi ten giao dich theo type va direction', () => {
     render(<TransactionList transactions={TRANSACTIONS} loading={false} />)
 

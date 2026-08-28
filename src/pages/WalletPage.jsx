@@ -107,7 +107,9 @@ export default function WalletPage() {
         </p>
       )}
 
-      <WalletCard wallet={wallet ?? {}} loading={loading} />
+      {/* Truyen thang `wallet`, KHONG phai `wallet ?? {}`. Cai `?? {}` cu bien
+          "chua biet so du" thanh "so du bang 0" ngay tai day. */}
+      <WalletCard wallet={wallet} loading={loading} />
 
       <div className="form-grid">
         <DepositForm walletId={walletId} onDone={handleMoneyMoved} />
@@ -116,7 +118,11 @@ export default function WalletPage() {
 
       <section className="card">
         <h2>Lịch sử giao dịch</h2>
-        <TransactionList transactions={transactions} loading={loading} />
+        <TransactionList
+          transactions={transactions}
+          loading={loading}
+          unavailable={Boolean(loadError)}
+        />
       </section>
     </div>
   )
