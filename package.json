@@ -3,10 +3,16 @@
   "private": true,
   "version": "0.0.0",
   "type": "module",
+  "engines": {
+    "node": "^20.19.0 || >=22.12.0"
+  },
   "scripts": {
+    "predev": "node scripts/check-node.js",
     "dev": "vite",
+    "prebuild": "node scripts/check-node.js",
     "build": "vite build",
     "lint": "oxlint",
+    "pretest": "node scripts/check-node.js",
     "test": "vitest run",
     "test:watch": "vitest",
     "preview": "vite preview"
