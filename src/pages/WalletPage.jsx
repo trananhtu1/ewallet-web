@@ -91,16 +91,21 @@ export default function WalletPage() {
         </div>
       </header>
 
+      {/* role="status" chu khong phai role="alert": day la tin bao tien do, no
+          duoc phep cho toi luc nguoi dung ranh tai. alert cat ngang moi thu
+          nguoi dung dang nghe, va dung no cho mot dong "dang cho" la lam phien. */}
       {isWaking && (
-        <p className="notice">
+        <p className="notice" role="status">
           Backend đang khởi động — đã chờ {elapsed}s. Nó chạy trên gói miễn phí của Render,
           tự tắt sau 15 phút không ai dùng và mất khoảng một phút để dậy lại. Trang đang chờ,
           không phải lỗi.
         </p>
       )}
 
+      {/* Cai nay thi role="alert": trang dang hien so lieu KHONG dung, nguoi dung
+          phai biet ngay chu khong doi. */}
       {loadError && (
-        <p className="notice notice--error">
+        <p className="notice notice--error" role="alert">
           {loadError.code === 'WALLET_NOT_FOUND'
             ? `Không tìm thấy ví #${walletId}.`
             : loadError.message}

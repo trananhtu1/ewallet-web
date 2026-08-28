@@ -1,7 +1,30 @@
 # Việc cần làm — frontend
 
-> Brief cho phiên làm việc tiếp theo. Cập nhật **27/08/2026**, sau commit `bab61ba`.
+> Brief cho phiên làm việc tiếp theo. Cập nhật **28/08/2026**.
 > Hợp đồng API đầy đủ: `java-learn/FE-SONG-SONG.md`.
+
+---
+
+## ✅ 28/08 — ĐÃ MỞ TRÊN TRÌNH DUYỆT LẦN ĐẦU
+
+Việc số 1 của bản brief cũ đã làm xong. Chạy hết luồng thật trên Chromium:
+đăng ký → tự tạo ví → nạp → chuyển → lịch sử, cộng 6 ca lỗi và màn 375px.
+
+**Ba lỗi bắt được, không cái nào lộ ra khi chỉ đọc code:**
+
+| # | Lỗi | Vì sao chỉ mở trình duyệt mới thấy |
+|---|---|---|
+| 1 | 💰 Backend chết → hiện **`0,00 đ`** và *"Chưa có giao dịch nào"* | Phải **tắt** backend rồi tải lại mới gặp. Ví thật có `37.654,33 đ` |
+| 2 | Nút "Nạp tiền" là nút **phụ**, "Chuyển tiền" là nút **chính** | Một chữ khác nhau trong `className`, đọc code không gợn; nhìn thì thấy ngay một cái trông như bị khoá |
+| 3 | `<title>` vẫn là `ewallet-web-tmp` | Nó không nằm trong React, nên không ai mở `src/` mà thấy |
+
+Lỗi 1 sửa ở PR *"Stop telling people they have no money…"*, lỗi 2–3 ở PR này.
+
+> 📌 **Bài học giữ lại:** `npm run build` sạch, `npm run lint` sạch, 64 test xanh —
+> mà vẫn có một màn hình nói dối về số dư. **Build được không có nghĩa là đúng.**
+
+⚠️ **Node trên máy Mac là v20.11.0, KHÔNG chạy được Vite 8** (thiếu `styleText`
+trong `node:util`, có từ Node 20.12). Dùng `nvm use 24` trước mọi lệnh npm.
 
 ---
 
@@ -153,7 +176,8 @@ production. Hai thứ phải chỉnh:
 
 ## ❌ Đừng làm bây giờ
 
-Đăng ký / đăng nhập (**backend chưa có API**) · đổi mật khẩu · upload KYC · dark mode ·
+~~Đăng ký / đăng nhập~~ — **đã xong 27/08**, backend có API rồi ·
+đổi mật khẩu · upload KYC · dark mode ·
 nhiều loại tiền tệ · phân trang số trang (1,2,3…) · thêm **thư viện component** (shadcn, MUI,
 Ant…) — Tailwind đã đủ, kéo thêm bộ component là kéo thêm thứ phải học và phải bảo trì.
 

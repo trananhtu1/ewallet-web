@@ -51,15 +51,26 @@ export default function DepositForm({ walletId, onDone }) {
           placeholder="50000.00"
           inputMode="decimal"
           disabled={busy}
+          aria-invalid={Boolean(fieldErrors.amount)}
         />
-        {fieldErrors.amount?.map((message) => (
-          <span key={message} className="error">{message}</span>
-        ))}
+        {/* aria-live tren VUNG CHUA, khong phai tren tung dong loi: vung phai
+            ton tai san trong DOM tu truoc thi trinh doc man hinh moi nhan ra
+            co gi vua them vao. Dat aria-live thang len phan tu vua duoc chen
+            ra thi no thuong khong doc. */}
+        <span className="field__errors" aria-live="polite">
+          {fieldErrors.amount?.map((message) => (
+            <span key={message} className="error">{message}</span>
+          ))}
+        </span>
       </label>
 
-      {formError && <p className="error error--form">{formError}</p>}
+      <p className="error error--form" aria-live="polite">{formError}</p>
 
-      <button className="button" disabled={busy}>
+      {/* button--primary, giong het TransferForm. Hai the nam canh nhau, moi
+          the mot hanh dong chinh cua rieng no - de mot cai la nut phu thi nguoi
+          dung doc ra "cai nay kem quan trong hon", tham chi "cai nay dang bi
+          khoa". Do la thu bat duoc bang mat khi mo trinh duyet lan dau. */}
+      <button className="button button--primary" disabled={busy}>
         {busy ? 'Đang nạp…' : 'Nạp tiền'}
       </button>
     </form>
