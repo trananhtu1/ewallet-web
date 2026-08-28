@@ -1,4 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { mockAdapter, restoreAdapter, sentHeader } from '../test/axiosMock'
 import { api } from './api'
 import { clearSession, readSession, saveSession } from './session'
 
@@ -11,10 +12,14 @@ import { clearSession, readSession, saveSession } from './session'
  * mot token da dung duoc trinh ra lan nua thi no coi la bang chung co hai ban sao
  * -> thu hoi CA CHUOI, nguoi dung bi da ra man dang nhap.
  *
- * Ma WalletPage goi getWallet + getTransactions bang Promise.all. Khong gop lai
- * thi client tu kich hoat co che chong trom cua chinh no. Da do tren backend that:
+ * Ma WalletPage goi getWallet + getTransactions song song. Khong gop lai thi
+ * client tu kich hoat co che chong trom cua chinh no. Da do tren backend that:
  * hai lenh /refresh song song -> 200 va 401, audit_log ghi
  * REFRESH_TOKEN_REUSED / CONCURRENT_CLAIM / revokedCount 2.
+ *
+ * <p>Doi sang axios KHONG lam nhe di rui ro nay - interceptor cua axios chay
+ * MOT LAN CHO MOI REQUEST, nen khong co gi tu dong gop chung lai. Cai gop chung
+ * van la refreshOnce() viet tay trong http.js.
  */
 
 const HET_HAN = -60_000 // token het han tu 1 phut truoc
@@ -30,35 +35,37 @@ function datPhien({ conHan }) {
   })
 }
 
-/** Tra ve fetch gia + bo dem so lan tung duong dan bi goi. */
-function mockFetch() {
+/** Tra ve adapter gia + bo dem so lan tung duong dan bi goi. */
+function mockApi() {
   const goi = { refresh: 0, khac: 0 }
 
-  const fetchMock = vi.fn(async (url) => {
-    if (String(url).includes('/api/auth/refresh')) {
+  const adapter = mockAdapter(async (config) => {
+    if (String(config.url).includes('/api/auth/refresh')) {
       goi.refresh += 1
       return {
-        ok: true,
         status: 200,
-        json: async () => ({
+        statusText: 'OK',
+        headers: {},
+        config,
+        data: {
           token: `access-moi-${goi.refresh}`,
           refreshToken: `refresh-moi-${goi.refresh}`,
           expiresInSeconds: 900,
           walletId: 3,
-        }),
+        },
       }
     }
 
     goi.khac += 1
-    return { ok: true, status: 200, json: async () => ({ id: 3 }) }
+    return { status: 200, statusText: 'OK', headers: {}, config, data: { id: 3 } }
   })
 
-  vi.stubGlobal('fetch', fetchMock)
-  return { fetchMock, goi }
+  return { adapter, goi }
 }
 
 beforeEach(() => clearSession())
 afterEach(() => {
+  restoreAdapter()
   vi.unstubAllGlobals()
   clearSession()
 })
@@ -66,7 +73,7 @@ afterEach(() => {
 describe('doi token ngam', () => {
   it('KHONG doi token khi access token con han', async () => {
     datPhien({ conHan: true })
-    const { goi } = mockFetch()
+    const { goi } = mockApi()
 
     await api('/api/wallets/me')
 
@@ -76,15 +83,14 @@ describe('doi token ngam', () => {
 
   it('doi token khi access token het han, roi dung token MOI cho request', async () => {
     datPhien({ conHan: false })
-    const { fetchMock, goi } = mockFetch()
+    const { adapter, goi } = mockApi()
 
     await api('/api/wallets/me')
 
     expect(goi.refresh).toBe(1)
 
     // Lan goi thu hai la request that - phai mang token MOI, khong phai cai cu.
-    const headers = fetchMock.mock.calls[1][1].headers
-    expect(headers.Authorization).toBe('Bearer access-moi-1')
+    expect(sentHeader(adapter, 1, 'Authorization')).toBe('Bearer access-moi-1')
   })
 
   /**
@@ -93,7 +99,7 @@ describe('doi token ngam', () => {
    */
   it('NAM request song song chi lam MOT lan doi token', async () => {
     datPhien({ conHan: false })
-    const { goi } = mockFetch()
+    const { goi } = mockApi()
 
     await Promise.all([
       api('/api/wallets/me'),
@@ -109,7 +115,7 @@ describe('doi token ngam', () => {
 
   it('lan het han SAU do lai doi tiep, khong dung lai ket qua cu', async () => {
     datPhien({ conHan: false })
-    const { goi } = mockFetch()
+    const { goi } = mockApi()
 
     await api('/api/wallets/me')
     expect(goi.refresh).toBe(1)
@@ -124,13 +130,20 @@ describe('doi token ngam', () => {
   it('doi token that bai -> xoa phien, khong thu di thu lai', async () => {
     datPhien({ conHan: false })
 
-    vi.stubGlobal(
-      'fetch',
-      vi.fn(async () => ({
-        ok: false,
-        status: 401,
-        json: async () => ({ code: 'INVALID_REFRESH_TOKEN' }),
-      })),
+    mockAdapter(async (config) =>
+      Promise.reject(
+        Object.assign(new Error('Request failed'), {
+          isAxiosError: true,
+          config,
+          response: {
+            status: 401,
+            statusText: 'Unauthorized',
+            headers: {},
+            config,
+            data: { code: 'INVALID_REFRESH_TOKEN' },
+          },
+        }),
+      ),
     )
 
     await expect(api('/api/wallets/me')).rejects.toMatchObject({ status: 401 })

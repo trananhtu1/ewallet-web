@@ -1,24 +1,25 @@
 import clsx from 'clsx'
 import { useState } from 'react'
-import { Link, Navigate, useNavigate } from 'react-router'
+import { Link, Navigate } from 'react-router'
 import { useAuth } from '../auth/useAuth'
-import { groupFieldErrors } from '../lib/api'
 import { validateEmail, validateFullName, validatePassword } from '../lib/authRules'
 
 export default function RegisterPage() {
-  const { session, signUp } = useAuth()
-  const navigate = useNavigate()
+  const { session, signUp, busy, formError, fieldErrors: serverFieldErrors } = useAuth()
 
   const [form, setForm] = useState({ email: '', password: '', fullName: '' })
-  const [fieldErrors, setFieldErrors] = useState({})
-  const [formError, setFormError] = useState(null)
-  const [busy, setBusy] = useState(false)
+
+  // Loi kiem TAI CHO. Tach khoi loi tu server vi chung co vong doi khac nhau:
+  // cai nay bien mat khi nguoi dung bam gui lai, cai kia do reducer don.
+  const [localFieldErrors, setLocalFieldErrors] = useState({})
 
   const update = (name) => (event) => setForm((f) => ({ ...f, [name]: event.target.value }))
 
-  async function handleSubmit(event) {
+  // Loi tai cho duoc uu tien: no vua duoc tinh lai ngay lan bam nay.
+  const fieldErrors = { ...serverFieldErrors, ...localFieldErrors }
+
+  function handleSubmit(event) {
     event.preventDefault()
-    setFormError(null)
 
     // Kiem truoc de bao loi ngay. Backend van kiem lai va no moi la thu quyet dinh.
     const errors = {}
@@ -30,30 +31,12 @@ export default function RegisterPage() {
     if (passwordError) errors.password = [passwordError]
     if (nameError) errors.fullName = [nameError]
 
-    if (Object.keys(errors).length > 0) {
-      setFieldErrors(errors)
-      return
-    }
+    setLocalFieldErrors(errors)
+    if (Object.keys(errors).length > 0) return
 
-    setFieldErrors({})
-    setBusy(true)
-    try {
-      // Dang ky xong co token luon, khong bat dang nhap lai.
-      await signUp(form.email.trim(), form.password, form.fullName.trim())
-      navigate('/', { replace: true })
-    } catch (error) {
-      if (error.code === 'EMAIL_ALREADY_USED') {
-        // Dat DUOI o email chu khong phai loi toan form: nguoi dung sua duoc ngay
-        // o dung cho, va o kia moi la cho sai.
-        setFieldErrors({ email: ['Email này đã được dùng'] })
-      } else if (error.code === 'VALIDATION_FAILED') {
-        setFieldErrors(groupFieldErrors(error.fieldErrors))
-      } else {
-        setFormError(error.message)
-      }
-    } finally {
-      setBusy(false)
-    }
+    // Dang ky xong co token luon, khong bat dang nhap lai - saga luu phien roi
+    // dispatch authSucceeded, va <Navigate> duoi day tu dua nguoi dung vao.
+    signUp(form.email.trim(), form.password, form.fullName.trim())
   }
 
   if (session) return <Navigate to="/" replace />

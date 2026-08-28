@@ -1,14 +1,18 @@
 import clsx from 'clsx'
 import { useState } from 'react'
-import { groupFieldErrors, transfer } from '../lib/api'
-import { validateAmount } from '../lib/money'
+import { toast } from 'sonner'
+import { SendHorizontal } from 'lucide-react'
+import { groupFieldErrors } from '../lib/api'
+import { formatMoney, validateAmount } from '../lib/money'
+import { useTransferMutation } from '../store/walletApi'
 
-export default function TransferForm({ walletId, onDone }) {
+export default function TransferForm({ walletId }) {
   const [toWalletId, setToWalletId] = useState('')
   const [amount, setAmount] = useState('')
   const [fieldErrors, setFieldErrors] = useState({})
   const [formError, setFormError] = useState(null)
-  const [busy, setBusy] = useState(false)
+
+  const [transfer, { isLoading: busy }] = useTransferMutation()
 
   async function handleSubmit(event) {
     event.preventDefault()
@@ -27,13 +31,11 @@ export default function TransferForm({ walletId, onDone }) {
     }
 
     setFieldErrors({})
-    setBusy(true)
     try {
-      // Response la VI NGUON sau khi chuyen - dung so du moi luon.
-      const wallet = await transfer(walletId, toWalletId, amount)
+      await transfer({ fromWalletId: walletId, toWalletId, amount }).unwrap()
       setToWalletId('')
       setAmount('')
-      onDone(wallet)
+      toast.success(`Đã chuyển ${formatMoney(amount)} tới ví #${toWalletId.trim()}`)
     } catch (error) {
       // Ba nhanh nay la ly do backend tach `code` khoi `message`.
       if (error.code === 'INSUFFICIENT_FUNDS') {
@@ -49,8 +51,6 @@ export default function TransferForm({ walletId, onDone }) {
       } else {
         setFormError(error.message)
       }
-    } finally {
-      setBusy(false)
     }
   }
 
@@ -99,6 +99,7 @@ export default function TransferForm({ walletId, onDone }) {
       <p className="error error--form" aria-live="polite">{formError}</p>
 
       <button className="button button--primary" disabled={busy}>
+        <SendHorizontal size={16} aria-hidden="true" />
         {busy ? 'Đang chuyển…' : 'Chuyển tiền'}
       </button>
     </form>

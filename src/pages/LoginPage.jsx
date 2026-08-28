@@ -1,63 +1,53 @@
 import clsx from 'clsx'
 import { useState } from 'react'
-import { Link, Navigate, useLocation, useNavigate } from 'react-router'
+import { Link, Navigate, useLocation } from 'react-router'
 import { useAuth } from '../auth/useAuth'
-import { groupFieldErrors } from '../lib/api'
 
 export default function LoginPage() {
-  const { session, signIn } = useAuth()
-  const navigate = useNavigate()
+  // busy / formError / fieldErrors deu den tu store - saga dat chung vao do.
+  // Man nay khong con try/catch quanh signIn nua.
+  const { session, signIn, busy, formError, fieldErrors } = useAuth()
   const location = useLocation()
 
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
-  const [fieldErrors, setFieldErrors] = useState({})
-  const [formError, setFormError] = useState(null)
-  const [busy, setBusy] = useState(false)
 
-  async function handleSubmit(event) {
+  // Loi kiem TAI CHO, chua he goi mang - nen no khong thuoc ve store.
+  const [localError, setLocalError] = useState(null)
+
+  function handleSubmit(event) {
     event.preventDefault()
-    setFormError(null)
-    setFieldErrors({})
+    setLocalError(null)
 
     // KHONG kiem dinh dang email o day, du man dang ky co kiem.
     // Bao "email khong dung dinh dang" o man dang nhap chi giup ke do mat khau
     // biet email nao co that - vo ich cho nguoi dung, huu ich cho ke tan cong.
     if (email.trim() === '' || password === '') {
-      setFormError('Nhập email và mật khẩu')
+      setLocalError('Nhập email và mật khẩu')
       return
     }
 
-    setBusy(true)
-    try {
-      await signIn(email.trim(), password)
-      // Quay lai dung trang dinh vao truoc khi bi chan.
-      navigate(location.state?.from ?? '/', { replace: true })
-    } catch (error) {
-      if (error.code === 'INVALID_CREDENTIALS') {
-        // Mot thong bao DUY NHAT cho ca hai truong hop sai email va sai mat khau.
-        // Tach ra la tiet lo email nao ton tai trong he thong.
-        setFormError('Email hoặc mật khẩu không đúng')
-      } else if (error.code === 'VALIDATION_FAILED') {
-        setFieldErrors(groupFieldErrors(error.fieldErrors))
-      } else {
-        setFormError(error.message)
-      }
-    } finally {
-      setBusy(false)
-    }
+    // Chi dispatch roi thoi. Ket qua ve qua store, va reducer signInRequested
+    // da don formError/fieldErrors cu di.
+    signIn(email.trim(), password)
   }
 
-  // Da dang nhap roi ma van vao /login (go tay URL, hoac bam Back) thi khong co
-  // ly do gi hien form ra nua.
-  if (session) return <Navigate to="/" replace />
+  // Mot cho duy nhat lo chuyen dieu huong, cho ca hai truong hop: vua dang
+  // nhap xong, va da dang nhap tu truoc ma van go tay URL /login.
+  //
+  // Truoc day day la hai duong khac nhau - mot cai navigate() sau await, mot
+  // cai <Navigate> - va chung de lech nhau. Gio session la thu duy nhat quyet
+  // dinh, nen khong con cho de lech.
+  if (session) return <Navigate to={location.state?.from ?? '/'} replace />
 
   return (
     <div className="auth-page">
       <form className="card auth-card" onSubmit={handleSubmit}>
         <h1 className="auth-title">Đăng nhập</h1>
 
-        {formError && <p className="error error--form">{formError}</p>}
+        {(localError ?? formError) && (
+          <p className="error error--form">{localError ?? formError}</p>
+        )}
 
         <label className="field">
           <span className="label">Email</span>

@@ -2,6 +2,10 @@
    theme mac dinh, va engine sinh utility. Khong co tailwind.config.js va khong
    co postcss.config.js - v4 bo ca hai, cau hinh nam thang trong file CSS nay. */
 @import "tailwindcss" source(none);
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+
+@custom-variant dark (&:is(.dark *));
 
 /* `source(none)` + @source = TU CHI DINH cho nao duoc quet.
    Mac dinh Tailwind quet ca thu muc goc repo, KE CA README.md - nen moi doan
@@ -19,10 +23,18 @@
 @theme {
   --color-bg: #f6f7f9;
   --color-surface: #ffffff;
-  --color-border: #e3e6ea;
   --color-text: #14181f;
-  --color-muted: #6b7280;
-  --color-primary: #1f6feb;
+
+  /* --color-border va --color-primary KHONG con dat o day.
+     Khoi `@theme inline` cua shadcn (cuoi file) dinh nghia lai ca hai ten do
+     thanh var(--border) / var(--primary), va no nam SAU nen no thang. Doi mau
+     o day se khong co tac dung gi - mot cai bay im lang.
+     Sua hai mau do o khoi :root cuoi file. */
+  /* Doi ten tu --color-muted vi shadcn cung dat ten do, nhung voi Y NGHIA
+     NGUOC LAI: o day no la mau CHU phu, con ben shadcn --muted la mau NEN.
+     De trung ten thi moi dong .muted, .label, .hint deu thanh gan trang tren
+     nen trang - chu khong bien mat han, nen rat de lot qua mat. */
+  --color-muted-text: #6b7280;
   --color-in: #0f8a4b;
   --color-out: #c2410c;
   --color-danger: #c81e1e;
@@ -40,6 +52,17 @@
     color: var(--color-text);
     font-family: var(--font-sans);
     line-height: 1.5;
+    /* shadcn init chen `@apply bg-background text-foreground` vao day. Da bo:
+       no nam SAU hai dong tren, cung do uu tien, nen no thang - nen trang bi
+       doi tu #f6f7f9 sang trang tinh. Gio --background da tro ve dung mau nay
+       roi (xem :root duoi cung), nen hai dong tren da du va khong con dong nao
+       am tham de len chung. */
+  }
+  * {
+    /* Cho shadcn: component cua no dat `border` (chi do day) roi trong cay mau
+       den tu day. Khong dung toi CSS san co - moi border trong @layer
+       components deu tu ghi mau, va layer components thang layer base. */
+    @apply border-border outline-ring/50;
   }
 }
 
@@ -56,8 +79,8 @@
   .header h1 { margin: 0 0 2px; font-size: 26px; font-weight: 700; }
   .header { margin-bottom: 20px; }
 
-  .muted { color: var(--color-muted); font-size: 14px; margin: 0; }
-  .label { color: var(--color-muted); font-size: 13px; margin: 0 0 4px; display: block; }
+  .muted { color: var(--color-muted-text); font-size: 14px; margin: 0; }
+  .label { color: var(--color-muted-text); font-size: 13px; margin: 0 0 4px; display: block; }
 
   .card {
     background: var(--color-surface);
@@ -104,7 +127,7 @@
   }
   .input:focus { outline: 2px solid var(--color-primary); outline-offset: -1px; }
   .input--error { border-color: var(--color-danger); }
-  .input:disabled { background: var(--color-bg); color: var(--color-muted); }
+  .input:disabled { background: var(--color-bg); color: var(--color-muted-text); }
 
   .error { color: var(--color-danger); font-size: 13px; display: block; margin-top: 4px; }
   .error--form { margin: 0 0 12px; font-weight: 500; }
@@ -155,7 +178,7 @@
 
   .tx__main { display: flex; flex-direction: column; min-width: 0; }
   .tx__title { font-size: 14px; }
-  .tx__time { color: var(--color-muted); font-size: 12px; }
+  .tx__time { color: var(--color-muted-text); font-size: 12px; }
 
   .tx__right { display: flex; align-items: center; gap: 8px; white-space: nowrap; }
   .tx__amount { font-weight: 600; font-variant-numeric: tabular-nums; font-size: 14px; }
@@ -184,11 +207,11 @@
     margin: 16px 0 0;
     font-size: 14px;
     text-align: center;
-    color: var(--color-muted);
+    color: var(--color-muted-text);
   }
   .auth-switch a { color: var(--color-primary); }
 
-  .hint { color: var(--color-muted); font-size: 12px; display: block; margin-top: 4px; }
+  .hint { color: var(--color-muted-text); font-size: 12px; display: block; margin-top: 4px; }
 
   .header__bar {
     display: flex;
@@ -203,6 +226,135 @@
     padding: 7px 14px;
     font-size: 14px;
     font-weight: 500;
-    color: var(--color-muted);
+    color: var(--color-muted-text);
   }
+}
+
+/* Cau noi giua hai he bien: ben trai la ten Tailwind sinh utility (bg-primary,
+   text-muted-foreground...), ben phai la bien tho o :root duoi cung.
+   `inline` nghia la Tailwind thay the ngay luc bien dich chu khong de lai mot
+   lop var() nua - nho vay doi mau trong .dark van an. */
+@theme inline {
+  --font-heading: var(--font-sans);
+
+  /* shadcn init dat o day `--font-sans: 'Geist Variable', sans-serif` cung mot
+     dong @import "@fontsource-variable/geist". Da bo ca hai: khoi @theme nay
+     nam SAU khoi @theme cua project nen no de len, va ca app doi font ma
+     khong ai chu dinh. Muon dung Geist thi them lai hai dong do - mot cho. */
+
+  --color-sidebar-ring: var(--sidebar-ring);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar: var(--sidebar);
+  --color-chart-5: var(--chart-5);
+  --color-chart-4: var(--chart-4);
+  --color-chart-3: var(--chart-3);
+  --color-chart-2: var(--chart-2);
+  --color-chart-1: var(--chart-1);
+  --color-ring: var(--ring);
+  --color-input: var(--input);
+  --color-border: var(--border);
+  --color-destructive: var(--destructive);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-accent: var(--accent);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-muted: var(--muted);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-secondary: var(--secondary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary: var(--primary);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-popover: var(--popover);
+  --color-card-foreground: var(--card-foreground);
+  --color-card: var(--card);
+  --color-foreground: var(--foreground);
+  --color-background: var(--background);
+  --radius-sm: calc(var(--radius) * 0.6);
+  --radius-md: calc(var(--radius) * 0.8);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) * 1.4);
+  --radius-2xl: calc(var(--radius) * 1.8);
+  --radius-3xl: calc(var(--radius) * 2.2);
+  --radius-4xl: calc(var(--radius) * 2.6);
+}
+
+/* ⭐ Bang mau shadcn dung, va no da duoc keo ve DUNG mau cua project.
+   Mac dinh shadcn sinh ra o day mot dai xam trung tinh (oklch(0.205 0 0) cho
+   --primary): de nguyen thi nut cua shadcn ra mau den trong khi .button--primary
+   san co mau xanh #1f6feb - hai loai nut cung mot trang, hai mau khac nhau.
+
+   Nen tat ca gia tri duoi day la mau CO SAN cua project, viet lai bang so that
+   chu khong phai var(--color-primary): @theme inline o tren dinh nghia
+   --color-primary: var(--primary), tro nguoc lai la thanh vong tron. */
+:root {
+  --background: #f6f7f9;    /* = --color-bg */
+  --foreground: #14181f;    /* = --color-text */
+  --card: #ffffff;          /* = --color-surface */
+  --card-foreground: #14181f;
+  --popover: #ffffff;
+  --popover-foreground: #14181f;
+  --primary: #1f6feb;       /* mau xanh cua .button--primary */
+  --primary-foreground: #ffffff;
+  --secondary: #eef0f3;
+  --secondary-foreground: #14181f;
+  --muted: #eef0f3;         /* NEN xam nhat - khong phai mau chu, xem --color-muted-text */
+  --muted-foreground: #6b7280;
+  --accent: #eef0f3;
+  --accent-foreground: #14181f;
+  --destructive: #c81e1e;   /* = --color-danger */
+  --border: #e3e6ea;
+  --input: #e3e6ea;
+  --ring: #1f6feb;          /* vien focus cung mau nhan dien, khong phai xam */
+  --chart-1: #1f6feb;
+  --chart-2: #0f8a4b;
+  --chart-3: #c2410c;
+  --chart-4: #6b7280;
+  --chart-5: #c81e1e;
+  --radius: 12px;           /* = --radius-card, de the shadcn bo goc giong .card */
+  --sidebar: oklch(0.985 0 0);
+  --sidebar-foreground: oklch(0.145 0 0);
+  --sidebar-primary: oklch(0.205 0 0);
+  --sidebar-primary-foreground: oklch(0.985 0 0);
+  --sidebar-accent: oklch(0.97 0 0);
+  --sidebar-accent-foreground: oklch(0.205 0 0);
+  --sidebar-border: oklch(0.922 0 0);
+  --sidebar-ring: oklch(0.708 0 0);
+}
+
+.dark {
+  --background: oklch(0.145 0 0);
+  --foreground: oklch(0.985 0 0);
+  --card: oklch(0.205 0 0);
+  --card-foreground: oklch(0.985 0 0);
+  --popover: oklch(0.205 0 0);
+  --popover-foreground: oklch(0.985 0 0);
+  --primary: oklch(0.922 0 0);
+  --primary-foreground: oklch(0.205 0 0);
+  --secondary: oklch(0.269 0 0);
+  --secondary-foreground: oklch(0.985 0 0);
+  --muted: oklch(0.269 0 0);
+  --muted-foreground: oklch(0.708 0 0);
+  --accent: oklch(0.269 0 0);
+  --accent-foreground: oklch(0.985 0 0);
+  --destructive: oklch(0.704 0.191 22.216);
+  --border: oklch(1 0 0 / 10%);
+  --input: oklch(1 0 0 / 15%);
+  --ring: oklch(0.556 0 0);
+  --chart-1: oklch(0.87 0 0);
+  --chart-2: oklch(0.556 0 0);
+  --chart-3: oklch(0.439 0 0);
+  --chart-4: oklch(0.371 0 0);
+  --chart-5: oklch(0.269 0 0);
+  --sidebar: oklch(0.205 0 0);
+  --sidebar-foreground: oklch(0.985 0 0);
+  --sidebar-primary: oklch(0.488 0.243 264.376);
+  --sidebar-primary-foreground: oklch(0.985 0 0);
+  --sidebar-accent: oklch(0.269 0 0);
+  --sidebar-accent-foreground: oklch(0.985 0 0);
+  --sidebar-border: oklch(1 0 0 / 10%);
+  --sidebar-ring: oklch(0.556 0 0);
 }

@@ -1,3 +1,4 @@
+import { fileURLToPath } from 'node:url'
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
@@ -8,6 +9,18 @@ export default defineConfig({
   // Nghia la khong co tailwind.config.js va khong co postcss.config.js -
   // toan bo cau hinh nam trong src/index.css bang @theme.
   plugins: [react(), tailwindcss()],
+
+  resolve: {
+    // '@' tro vao src/. shadcn/ui SINH RA code dung duong dan nay - khong khai
+    // bao thi moi component no them vao deu vo luc import.
+    //
+    // Khai bao o CA HAI cho: day cho Vite/Vitest thuc su phan giai duoc, va
+    // jsconfig.json cho editor va CLI cua shadcn doc. Lech nhau thi editor bao
+    // do trong khi build van chay, hoac nguoc lai.
+    alias: {
+      '@': fileURLToPath(new URL('./src', import.meta.url)),
+    },
+  },
 
   server: {
     port: 5173,

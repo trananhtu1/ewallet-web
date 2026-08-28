@@ -1,13 +1,19 @@
 import clsx from 'clsx'
 import { useState } from 'react'
-import { deposit, groupFieldErrors } from '../lib/api'
-import { validateAmount } from '../lib/money'
+import { toast } from 'sonner'
+import { ArrowDownToLine } from 'lucide-react'
+import { groupFieldErrors } from '../lib/api'
+import { formatMoney, validateAmount } from '../lib/money'
+import { useDepositMutation } from '../store/walletApi'
 
-export default function DepositForm({ walletId, onDone }) {
+export default function DepositForm({ walletId }) {
   const [amount, setAmount] = useState('')
   const [fieldErrors, setFieldErrors] = useState({})
   const [formError, setFormError] = useState(null)
-  const [busy, setBusy] = useState(false)
+
+  // `busy` khong con la useState tu quan: RTK Query da theo doi san vong doi
+  // cua mutation. Bot mot state, va bot mot cho co the quen setBusy(false).
+  const [deposit, { isLoading: busy }] = useDepositMutation()
 
   async function handleSubmit(event) {
     event.preventDefault()
@@ -22,19 +28,17 @@ export default function DepositForm({ walletId, onDone }) {
     }
 
     setFieldErrors({})
-    setBusy(true)
     try {
-      // Response CHINH LA vi sau khi nap -> khong can goi lai GET /api/wallets/{id}.
-      const wallet = await deposit(walletId, amount)
+      // .unwrap() de loi nem ra nhu mot exception thuong. Khong co no thi
+      // mutation tra ve { error } va cai catch duoi day khong bao gio chay.
+      await deposit({ walletId, amount }).unwrap()
       setAmount('')
-      onDone(wallet)
+      toast.success(`Đã nạp ${formatMoney(amount)}`)
     } catch (error) {
       // Re nhanh theo CODE, khong theo message.
       if (error.code === 'VALIDATION_FAILED') setFieldErrors(groupFieldErrors(error.fieldErrors))
       else if (error.code === 'WALLET_NOT_FOUND') setFormError('Không tìm thấy ví này')
       else setFormError(error.message)
-    } finally {
-      setBusy(false)
     }
   }
 
@@ -71,6 +75,7 @@ export default function DepositForm({ walletId, onDone }) {
           dung doc ra "cai nay kem quan trong hon", tham chi "cai nay dang bi
           khoa". Do la thu bat duoc bang mat khi mo trinh duyet lan dau. */}
       <button className="button button--primary" disabled={busy}>
+        <ArrowDownToLine size={16} aria-hidden="true" />
         {busy ? 'Đang nạp…' : 'Nạp tiền'}
       </button>
     </form>

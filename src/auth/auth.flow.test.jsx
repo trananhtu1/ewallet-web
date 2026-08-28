@@ -1,8 +1,9 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { MemoryRouter } from 'react-router'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import App from '../App'
 import { saveSession } from '../lib/session'
+import { reply, restoreAdapter, routeAdapter } from '../test/axiosMock'
 import { AuthProvider } from './AuthProvider'
 
 function renderApp(initialPath = '/') {
@@ -15,20 +16,7 @@ function renderApp(initialPath = '/') {
   )
 }
 
-/** Tra loi theo tung URL, giong backend that hon la mot response duy nhat. */
-function routeFetch(handlers) {
-  const fetchMock = vi.fn(async (url) => {
-    const match = Object.keys(handlers).find((key) => String(url).includes(key))
-    if (!match) throw new TypeError('Failed to fetch')
-    return handlers[match]()
-  })
-  vi.stubGlobal('fetch', fetchMock)
-  return fetchMock
-}
-
-const json = (status, body) => () => ({ ok: status < 400, status, json: async () => body })
-
-const AUTH_OK = json(200, {
+const AUTH_OK = reply(200, {
   token: 'token-abc',
   refreshToken: 'rt-token-abc',
   expiresInSeconds: 7200,
@@ -36,15 +24,15 @@ const AUTH_OK = json(200, {
   fullName: 'Richard Tran',
 })
 
-const WALLET_OK = json(200, { id: 4, userId: 1, balance: '250000.50', version: 0 })
-const NO_TRANSACTIONS = json(200, [])
+const WALLET_OK = reply(200, { id: 4, userId: 1, balance: '250000.50', version: 0 })
+const NO_TRANSACTIONS = reply(200, [])
 
 beforeEach(() => localStorage.clear())
-afterEach(() => vi.unstubAllGlobals())
+afterEach(restoreAdapter)
 
 describe('cong chan route', () => {
   it('chua dang nhap thi vao / se thay man dang nhap', async () => {
-    routeFetch({})
+    routeAdapter({})
     renderApp('/')
 
     expect(await screen.findByRole('heading', { name: 'Đăng nhập' })).toBeInTheDocument()
@@ -52,7 +40,7 @@ describe('cong chan route', () => {
 
   it('da dang nhap thi vao / thay thang man vi', async () => {
     saveSession({ token: 'token-abc', refreshToken: 'rt-token-abc', expiresInSeconds: 7200, walletId: 4, fullName: 'Richard Tran' })
-    routeFetch({ '/api/wallets/4/transactions': NO_TRANSACTIONS, '/api/wallets/4': WALLET_OK })
+    routeAdapter({ '/api/wallets/4/transactions': NO_TRANSACTIONS, '/api/wallets/4': WALLET_OK })
 
     renderApp('/')
 
@@ -62,7 +50,7 @@ describe('cong chan route', () => {
 
   it('da dang nhap ma vao /login thi bi day ve man vi', async () => {
     saveSession({ token: 'token-abc', refreshToken: 'rt-token-abc', expiresInSeconds: 7200, walletId: 4, fullName: 'Richard Tran' })
-    routeFetch({ '/api/wallets/4/transactions': NO_TRANSACTIONS, '/api/wallets/4': WALLET_OK })
+    routeAdapter({ '/api/wallets/4/transactions': NO_TRANSACTIONS, '/api/wallets/4': WALLET_OK })
 
     renderApp('/login')
 
@@ -79,7 +67,7 @@ describe('dang nhap', () => {
   }
 
   it('dang nhap dung thi vao thang man vi', async () => {
-    routeFetch({
+    routeAdapter({
       '/api/auth/login': AUTH_OK,
       '/api/wallets/4/transactions': NO_TRANSACTIONS,
       '/api/wallets/4': WALLET_OK,
@@ -92,7 +80,7 @@ describe('dang nhap', () => {
   })
 
   it('token duoc luu lai de tai trang khong phai dang nhap lai', async () => {
-    routeFetch({
+    routeAdapter({
       '/api/auth/login': AUTH_OK,
       '/api/wallets/4/transactions': NO_TRANSACTIONS,
       '/api/wallets/4': WALLET_OK,
@@ -111,8 +99,8 @@ describe('dang nhap', () => {
    * "email khong ton tai" la ho vua tang ke tan cong cong cu do email co that.
    */
   it('sai mat khau: mot thong bao chung, khong tiet lo email co ton tai hay khong', async () => {
-    routeFetch({
-      '/api/auth/login': json(401, {
+    routeAdapter({
+      '/api/auth/login': reply(401, {
         status: 401,
         code: 'INVALID_CREDENTIALS',
         message: 'Email hoặc mật khẩu không đúng',
@@ -129,7 +117,7 @@ describe('dang nhap', () => {
   })
 
   it('backend chet thi bao loi mang chu khong treo im lang', async () => {
-    routeFetch({})
+    routeAdapter({})
     renderApp('/login')
 
     fillLogin('anh@vieted.com', 'matkhau12345')
@@ -141,7 +129,7 @@ describe('dang nhap', () => {
 describe('dang xuat', () => {
   it('bam dang xuat thi ve man dang nhap va xoa token', async () => {
     saveSession({ token: 'token-abc', refreshToken: 'rt-token-abc', expiresInSeconds: 7200, walletId: 4, fullName: 'Richard Tran' })
-    routeFetch({ '/api/wallets/4/transactions': NO_TRANSACTIONS, '/api/wallets/4': WALLET_OK })
+    routeAdapter({ '/api/wallets/4/transactions': NO_TRANSACTIONS, '/api/wallets/4': WALLET_OK })
 
     renderApp('/')
     await screen.findByText('250.000,50 đ')

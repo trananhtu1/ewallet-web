@@ -1,59 +1,56 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
-import * as apiClient from '../lib/api'
-import { clearSession, readSession, saveSession } from '../lib/session'
-import { AuthContext } from './authContext'
+import { useEffect, useState } from 'react'
+import { Provider, useDispatch } from 'react-redux'
+import { setSessionExpiredHandler } from '../lib/api'
+import { clearSession } from '../lib/session'
+import { makeStore } from '../store'
+import { sessionCleared } from '../store/authSlice'
 
+/**
+ * Cam Redux store vao cay component.
+ *
+ * <p>Ten cu duoc giu lai co y: cho nao dang boc <AuthProvider> khong phai sua
+ * gi, va cai ten van dung - no van la thu quyet dinh "app nay biet ai dang
+ * dang nhap".
+ *
+ * <p>Store dung MOI LAN MOUNT chu khong phai mot singleton import tu ngoai:
+ * moi lan render trong test can mot store sach, neu khong thi phien cua test
+ * truoc con nam lai trong store cua test sau va loi hien ra o mot cho chang
+ * lien quan gi toi nguyen nhan. App that mount dung mot lan nen khong mat gi.
+ */
 export function AuthProvider({ children }) {
-  // Doc localStorage NGAY trong initializer, khong phai trong useEffect. Neu doi
-  // effect thi lan render dau session van la null -> RequireAuth day nguoi dung
-  // ve /login roi moi keo nguoc lai. Man hinh nhay mot cai moi lan tai trang.
-  const [session, setSession] = useState(readSession)
+  const [store] = useState(makeStore)
+
+  return (
+    <Provider store={store}>
+      <SessionExpiryBridge />
+      {children}
+    </Provider>
+  )
+}
+
+/**
+ * Noi tang HTTP voi store.
+ *
+ * <p>http.js khong duoc phep biet gi ve Redux hay React - biet thi khong test
+ * noi no bang Node. Nen no bao ra bang mot callback, va cho nay la cho duy
+ * nhat doi callback do thanh mot action.
+ *
+ * <p>Khong render gi ca: no la day dien, khong phai giao dien.
+ */
+function SessionExpiryBridge() {
+  const dispatch = useDispatch()
 
   useEffect(() => {
-    // Token het han giua chung: api() goi vao day. Xoa phien la du - RequireAuth
-    // thay session null se tu dieu huong, khong can goi navigate() o day.
-    apiClient.setSessionExpiredHandler(() => {
+    // Token het han giua chung: interceptor cua axios goi vao day. Xoa phien
+    // la du - RequireAuth thay session null se tu dieu huong, khong can goi
+    // navigate() o day.
+    setSessionExpiredHandler(() => {
       clearSession()
-      setSession(null)
+      dispatch(sessionCleared())
     })
 
-    return () => apiClient.setSessionExpiredHandler(() => {})
-  }, [])
+    return () => setSessionExpiredHandler(() => {})
+  }, [dispatch])
 
-  const signIn = useCallback(async (email, password) => {
-    setSession(saveSession(await apiClient.login(email, password)))
-  }, [])
-
-  const signUp = useCallback(async (email, password, fullName) => {
-    // Backend tra token luon sau khi dang ky, khong bat dang nhap lai.
-    setSession(saveSession(await apiClient.register(email, password, fullName)))
-  }, [])
-
-  const signOut = useCallback(async () => {
-    // Bao server thu hoi refresh token TRUOC, roi moi xoa o client.
-    //
-    // Truoc day o day co mot comment noi "JWT la stateless, server khong giu
-    // phien nao de xoa" - dung voi JWT, nhung tu khi co refresh token thi server
-    // CO giu, va khong bao thi cai token do con song 7 ngay.
-    //
-    // Nuot loi co y: dang xuat phai LUON thanh cong o phia nguoi dung. Mat mang
-    // hay server chet ma khong cho ra man dang nhap la mot cach lam nguoi ta
-    // hoang. Doi lai: refresh token khong bi thu hoi - chap nhan, vi truong hop
-    // do dung bang hanh vi cu.
-    try {
-      await apiClient.logout()
-    } catch {
-      // khong lam gi - xem tren
-    }
-
-    clearSession()
-    setSession(null)
-  }, [])
-
-  const value = useMemo(
-    () => ({ session, signIn, signUp, signOut }),
-    [session, signIn, signUp, signOut],
-  )
-
-  return <AuthContext value={value}>{children}</AuthContext>
+  return null
 }
