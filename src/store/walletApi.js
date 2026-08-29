@@ -47,11 +47,46 @@ export const walletApi = createApi({
       providesTags: ['Wallet'],
     }),
 
+    // Backend doi hop dong 29/08 (ewallet-api #14): truoc tra ve MOT MANG, gio
+    // tra ve { items, nextCursor, hasMore }. Ly do khong phai toc do ma la DUNG
+    // SAI: OFFSET dem theo VI TRI, ma vi tri xe dich khi co giao dich moi chen
+    // vao dau. Do duoc o backend: doc trang 1 ra id 1..5, co 3 giao dich moi,
+    // doc OFFSET 5 ra id 3,4,5,6,7 - ba dong vua xem hien lai lan hai. Tren mot
+    // bang tien thi nguoi dung doc do la "toi bi tru tien hai lan".
     getTransactions: build.query({
-      query: ({ walletId, limit = 20 }) => ({
+      query: ({ walletId, limit = 20, cursor }) => ({
         url: `/api/wallets/${walletId}/transactions`,
-        params: { limit },
+        // Khong gui cursor=undefined: axios se bien no thanh ?cursor= (chuoi
+        // rong), va backend coi chuoi rong la "co cursor nhung doc khong ra"
+        // -> 400 INVALID_CURSOR ngay o trang dau.
+        params: cursor ? { limit, cursor } : { limit },
       }),
+
+      // ⭐ Ba tuy chon duoi day bien mot query "mot trang" thanh danh sach noi dai.
+      //
+      // serializeQueryArgs: bo `cursor` ra khoi khoa cache, chi giu walletId.
+      // Khong co dong nay thi MOI trang la mot o cache rieng, va man hinh se
+      // NHAY sang trang 2 thay vi noi them vao duoi.
+      serializeQueryArgs: ({ queryArgs }) => queryArgs.walletId,
+
+      // merge: noi trang moi vao duoi trang cu. Day la ham cua Immer nen sua
+      // truc tiep `cache` duoc.
+      merge: (cache, moi, { arg }) => {
+        // Khong co cursor = trang DAU = lam moi that su (vd. sau khi chuyen
+        // tien). Phai THAY HAN, khong duoc noi - noi thi 20 dong cu con nguyen
+        // ben duoi va giao dich vua tao hien HAI lan.
+        if (!arg.cursor) return moi
+
+        cache.items.push(...moi.items)
+        cache.nextCursor = moi.nextCursor
+        cache.hasMore = moi.hasMore
+      },
+
+      // forceRefetch: vi cursor da bi loai khoi khoa cache o tren, RTK Query
+      // nhin hai lan goi khac cursor thay y het nhau va se KHONG goi lan hai.
+      // Dong nay noi cho no biet cursor doi thi van phai di lay.
+      forceRefetch: ({ currentArg, previousArg }) => currentArg?.cursor !== previousArg?.cursor,
+
       providesTags: ['Transactions'],
     }),
 

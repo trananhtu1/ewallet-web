@@ -23,9 +23,18 @@ export default function WalletPage() {
   // (wallet/transactions/loadError) va ca ham reload(). RTK Query lo het -
   // ke ca chuyen huy request luc unmount va bo qua ket qua ve muon.
   const walletQuery = useGetWalletQuery(walletId)
-  const txQuery = useGetTransactionsQuery({ walletId, limit: 20 })
 
+  // cursor = moc cua trang dang xin. null = trang dau.
+  // Giu o day chu khong trong walletApi: day la trang thai cua MAN HINH (nguoi
+  // dung da bam Xem them may lan), khong phai cua du lieu.
+  const [cursor, setCursor] = useState(null)
+  const txQuery = useGetTransactionsQuery({ walletId, limit: 20, cursor })
+
+  // isLoading chi TRUE o lan tai dau tien cua mot o cache. Bam "Xem them" thi
+  // no van FALSE va isFetching moi len TRUE - dung cai ta can, vi danh sach cu
+  // phai o nguyen tren man hinh trong luc trang sau dang ve.
   const loading = walletQuery.isLoading || txQuery.isLoading
+  const dangTaiThem = txQuery.isFetching && !txQuery.isLoading
 
   // 401 KHONG hien ra o day: interceptor da goi sessionExpired -> phien bi xoa
   // -> RequireAuth day ve /login. Bao loi cho mot man sap bien mat la lam
@@ -99,10 +108,21 @@ export default function WalletPage() {
       <section className="card">
         <h2>Lịch sử giao dịch</h2>
         <TransactionList
-          transactions={txQuery.data ?? []}
+          transactions={txQuery.data?.items ?? []}
           loading={loading}
           unavailable={Boolean(loadError)}
         />
+
+        {txQuery.data?.hasMore && (
+          <button
+            type="button"
+            className="button button--ghost"
+            disabled={dangTaiThem}
+            onClick={() => setCursor(txQuery.data.nextCursor)}
+          >
+            {dangTaiThem ? 'Đang tải…' : 'Xem thêm'}
+          </button>
+        )}
       </section>
     </div>
   )

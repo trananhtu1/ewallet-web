@@ -25,7 +25,9 @@ const AUTH_OK = reply(200, {
 })
 
 const WALLET_OK = reply(200, { id: 4, userId: 1, balance: '250000.50', version: 0 })
-const NO_TRANSACTIONS = reply(200, [])
+// Hop dong doi 29/08 (ewallet-api #14): endpoint tra ve object chu khong con
+// la mang. Mau nay chep tu response that, khong che tay.
+const NO_TRANSACTIONS = reply(200, { items: [], nextCursor: null, hasMore: false })
 
 beforeEach(() => localStorage.clear())
 afterEach(restoreAdapter)
