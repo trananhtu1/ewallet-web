@@ -5,6 +5,10 @@ import { ArrowDownToLine } from 'lucide-react'
 import { groupFieldErrors } from '../lib/api'
 import { formatMoney, validateAmount } from '../lib/money'
 import { useDepositMutation } from '../store/walletApi'
+import { Button } from './ui/button'
+import { Card, CardContent } from './ui/card'
+import { Input } from './ui/input'
+import { Label } from './ui/label'
 
 export default function DepositForm({ walletId }) {
   const [amount, setAmount] = useState('')
@@ -43,41 +47,55 @@ export default function DepositForm({ walletId }) {
   }
 
   return (
-    <form className="card" onSubmit={handleSubmit}>
-      <h2>Nạp tiền</h2>
+    // `h-full` + `flex` o day, va `mt-auto` o nut duoi: hai the nam canh nhau
+    // trong mot luoi 2 cot, ma the Chuyen tien co ba truong con the nay co mot.
+    // Khong ep chieu cao thi the trai lung lung mot khoang trong o duoi va hai
+    // nut khong thang hang - de thay ngay khi mo trinh duyet.
+    <Card className="h-full">
+      <CardContent className="flex h-full flex-col pt-6">
+        <h2 className="mb-4 text-[15px] font-semibold">Nạp tiền</h2>
 
-      <label className="field">
-        <span className="label">Số tiền</span>
-        <input
-          className={clsx('input', fieldErrors.amount && 'input--error')}
-          value={amount}
-          onChange={(e) => setAmount(e.target.value)}
-          placeholder="50000.00"
-          inputMode="decimal"
-          disabled={busy}
-          aria-invalid={Boolean(fieldErrors.amount)}
-        />
+        <form onSubmit={handleSubmit} className="flex flex-1 flex-col" noValidate>
+          <div className="grid gap-2">
+            <Label htmlFor="deposit-amount">Số tiền</Label>
+            <Input
+              id="deposit-amount"
+              className={clsx(fieldErrors.amount && 'border-destructive')}
+              value={amount}
+              onChange={(e) => setAmount(e.target.value)}
+              placeholder="50000.00"
+              inputMode="decimal"
+              disabled={busy}
+              aria-invalid={Boolean(fieldErrors.amount)}
+            />
         {/* aria-live tren VUNG CHUA, khong phai tren tung dong loi: vung phai
             ton tai san trong DOM tu truoc thi trinh doc man hinh moi nhan ra
             co gi vua them vao. Dat aria-live thang len phan tu vua duoc chen
             ra thi no thuong khong doc. */}
-        <span className="field__errors" aria-live="polite">
-          {fieldErrors.amount?.map((message) => (
-            <span key={message} className="error">{message}</span>
-          ))}
-        </span>
-      </label>
+            <span aria-live="polite">
+              {fieldErrors.amount?.map((message) => (
+                <span key={message} className="text-sm text-destructive">{message}</span>
+              ))}
+            </span>
+          </div>
 
-      <p className="error error--form" aria-live="polite">{formError}</p>
+          {/* Vung nay ton tai san du chua co loi (xem ghi chu aria-live tren),
+              nhung `empty:hidden` tat khoang trong khi no rong - de tran thi
+              trang co mot mang trang khong ai giai thich duoc. */}
+          <p className="mt-3 mb-0 text-sm font-medium text-destructive empty:hidden" aria-live="polite">
+            {formError}
+          </p>
 
       {/* button--primary, giong het TransferForm. Hai the nam canh nhau, moi
           the mot hanh dong chinh cua rieng no - de mot cai la nut phu thi nguoi
           dung doc ra "cai nay kem quan trong hon", tham chi "cai nay dang bi
           khoa". Do la thu bat duoc bang mat khi mo trinh duyet lan dau. */}
-      <button className="button button--primary" disabled={busy}>
-        <ArrowDownToLine size={16} aria-hidden="true" />
-        {busy ? 'Đang nạp…' : 'Nạp tiền'}
-      </button>
-    </form>
+          <Button type="submit" className="mt-auto w-full" disabled={busy}>
+            <ArrowDownToLine className="size-4" aria-hidden="true" />
+            {busy ? 'Đang nạp…' : 'Nạp tiền'}
+          </Button>
+        </form>
+      </CardContent>
+    </Card>
   )
 }

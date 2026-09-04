@@ -63,7 +63,7 @@ export default function WalletPage() {
 
   return (
     <div className="mx-auto max-w-[760px] px-5 pb-16 pt-6">
-      <header className="mb-6 flex items-center justify-between gap-4">
+      <header className="mb-6 flex min-w-0 items-center justify-between gap-3">
         <Brand />
 
         <div className="flex min-w-0 items-center gap-3">
@@ -72,8 +72,18 @@ export default function WalletPage() {
               va an nhau bang `hidden sm:inline` / `sm:hidden`. Nhung CSS chi
               GIAU, khong xoa khoi DOM: trinh doc man hinh doc ten hai lan, va
               test bat duoc ngay ("Found multiple elements with the text").
-              Man hep thi cho truncate, khong nhan ban the. */}
-          <span className="truncate text-sm text-muted-foreground">{session.fullName}</span>
+
+              An MOT the bang CSS thi khong sao - chi nhan ban no moi sai.
+
+              ⚠️ Va o day an di la LUA CHON BO CUC, khong phai sua loi tran.
+              Ban dau tuong trang bi tran ngang tren man 390px vi anh chup
+              headless nhin nhu bi cat - do lai bang scrollWidth thi bang dung
+              390, khong phan tu nao vuot. `truncate` + `min-w-0` da du.
+              Van an vi header 390px co ba khoi thi chat, va ten nguoi dung la
+              thu it can nhat trong ba. */}
+          <span className="hidden truncate text-sm text-muted-foreground sm:inline">
+            {session.fullName}
+          </span>
 
           <Button type="button" variant="ghost" size="sm" onClick={signOut}>
             <LogOut className="size-4" aria-hidden="true" />
