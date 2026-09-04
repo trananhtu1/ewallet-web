@@ -69,6 +69,18 @@ export default function TransactionList({ transactions, loading, unavailable = f
 
             <div className="flex min-w-0 flex-col">
               <span className="truncate text-sm">{describe(tx)}</span>
+
+              {/* ⚠️ Hien nhu VAN BAN THUAN. React tu escape moi chuoi nhet vao JSX,
+                  nen day an toan - nhung o nay do NGUOI KHAC go va hien tren man
+                  hinh minh, tuc la neu mai kia co ai doi sang
+                  dangerouslySetInnerHTML "cho hien duoc emoji dep hon" thi day
+                  thanh mot duong XSS luu tru. Backend cung chan o 140 ky tu. */}
+              {tx.note && (
+                <span className="truncate text-xs italic text-muted-foreground">
+                  “{tx.note}”
+                </span>
+              )}
+
               <span className="text-xs text-muted-foreground">{formatTime(tx.createdAt)}</span>
             </div>
 

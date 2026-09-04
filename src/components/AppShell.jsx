@@ -1,4 +1,4 @@
-import { ArrowLeftRight, Home, List, User } from 'lucide-react'
+import { ArrowLeftRight, ChartColumn, Home, List, User } from 'lucide-react'
 import { NavLink, Outlet } from 'react-router'
 import { useAuth } from '../auth/useAuth'
 import Brand from './Brand'
@@ -37,6 +37,7 @@ const TABS = [
   { to: '/', label: 'Trang chủ', Icon: Home, end: true },
   { to: '/chuyen-tien', label: 'Chuyển tiền', Icon: ArrowLeftRight },
   { to: '/lich-su', label: 'Lịch sử', Icon: List },
+  { to: '/sao-ke', label: 'Sao kê', Icon: ChartColumn },
   { to: '/ca-nhan', label: 'Cá nhân', Icon: User },
 ]
 
@@ -50,7 +51,7 @@ export default function AppShell() {
       <nav
         aria-label="Điều hướng chính"
         className="
-          fixed inset-x-0 bottom-0 z-10 grid grid-cols-4 border-t border-border bg-card
+          fixed inset-x-0 bottom-0 z-10 grid grid-cols-5 border-t border-border bg-card
           lg:static lg:h-dvh lg:grid-cols-1 lg:content-start lg:gap-1 lg:border-r lg:border-t-0 lg:p-4
         "
       >

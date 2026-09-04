@@ -5,6 +5,7 @@ import HistoryPage from './pages/HistoryPage'
 import HomePage from './pages/HomePage'
 import LoginPage from './pages/LoginPage'
 import ProfilePage from './pages/ProfilePage'
+import StatementPage from './pages/StatementPage'
 import RegisterPage from './pages/RegisterPage'
 import TransferPage from './pages/TransferPage'
 
@@ -40,6 +41,7 @@ export default function App() {
         <Route path="/" element={<HomePage />} />
         <Route path="/chuyen-tien" element={<TransferPage />} />
         <Route path="/lich-su" element={<HistoryPage />} />
+        <Route path="/sao-ke" element={<StatementPage />} />
         <Route path="/ca-nhan" element={<ProfilePage />} />
       </Route>
 

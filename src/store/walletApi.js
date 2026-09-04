@@ -40,7 +40,7 @@ const axiosBaseQuery =
 export const walletApi = createApi({
   reducerPath: 'walletApi',
   baseQuery: axiosBaseQuery(),
-  tagTypes: ['Wallet', 'Transactions', 'Kyc', 'Reconciliation'],
+  tagTypes: ['Wallet', 'Transactions', 'Kyc', 'Reconciliation', 'Beneficiaries', 'Statement'],
   endpoints: (build) => ({
     getWallet: build.query({
       query: (walletId) => ({ url: `/api/wallets/${walletId}` }),
@@ -160,6 +160,28 @@ export const walletApi = createApi({
       invalidatesTags: ['Kyc'],
     }),
 
+    // ===== Sao ke theo thang =====
+    getStatement: build.query({
+      query: (months = 6) => ({ url: '/api/statement', params: { months } }),
+      providesTags: ['Statement'],
+    }),
+
+    // ===== So dia chi nguoi nhan =====
+    getBeneficiaries: build.query({
+      query: () => ({ url: '/api/beneficiaries' }),
+      providesTags: ['Beneficiaries'],
+    }),
+
+    saveBeneficiary: build.mutation({
+      query: (body) => ({ url: '/api/beneficiaries', method: 'POST', data: body }),
+      invalidatesTags: ['Beneficiaries'],
+    }),
+
+    deleteBeneficiary: build.mutation({
+      query: (id) => ({ url: `/api/beneficiaries/${id}`, method: 'DELETE' }),
+      invalidatesTags: ['Beneficiaries'],
+    }),
+
     // ===== Doi soat cuoi ngay =====
     getReconciliation: build.query({
       query: (limit = 7) => ({ url: '/api/reconciliation', params: { limit } }),
@@ -198,4 +220,8 @@ export const {
   useGetKycQuery,
   useSubmitKycMutation,
   useGetReconciliationQuery,
+  useGetStatementQuery,
+  useGetBeneficiariesQuery,
+  useSaveBeneficiaryMutation,
+  useDeleteBeneficiaryMutation,
 } = walletApi
