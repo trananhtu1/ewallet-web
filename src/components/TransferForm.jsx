@@ -10,9 +10,16 @@ import { Card, CardContent } from './ui/card'
 import { Input } from './ui/input'
 import { Label } from './ui/label'
 
-export default function TransferForm({ walletId }) {
-  const [toWalletId, setToWalletId] = useState('')
+/**
+ * `toWalletId` va `setToWalletId` do TRANG nam, khong phai form.
+ *
+ * <p>Ly do: so dia chi nguoi nhan nam canh form va bam vao mot dong o do phai
+ * dien duoc vao o nay. Hai thanh phan anh em khong noi chuyen truc tiep voi
+ * nhau - trang la cho gan nhat giu duoc ca hai.
+ */
+export default function TransferForm({ walletId, toWalletId, setToWalletId }) {
   const [amount, setAmount] = useState('')
+  const [note, setNote] = useState('')
   const [fieldErrors, setFieldErrors] = useState({})
   const [formError, setFormError] = useState(null)
 
@@ -36,9 +43,18 @@ export default function TransferForm({ walletId }) {
 
     setFieldErrors({})
     try {
-      await transfer({ fromWalletId: walletId, toWalletId, amount }).unwrap()
+      // note: gui `undefined` khi de trong chu khong phai chuoi rong. axios bo
+      // han khoa co gia tri undefined ra khoi JSON, nen backend nhan "khong co
+      // truong nay" - dung y nghia hon la mot chuoi rong.
+      await transfer({
+        fromWalletId: walletId,
+        toWalletId,
+        amount,
+        note: note.trim() || undefined,
+      }).unwrap()
       setToWalletId('')
       setAmount('')
+      setNote('')
       toast.success(`Đã chuyển ${formatMoney(amount)} tới ví #${toWalletId.trim()}`)
     } catch (error) {
       // Ba nhanh nay la ly do backend tach `code` khoi `message`.
@@ -83,7 +99,7 @@ export default function TransferForm({ walletId }) {
             </span>
           </div>
 
-          <div className="grid gap-2">
+          <div className="mb-4 grid gap-2">
             <Label htmlFor="transfer-amount">Số tiền</Label>
             <Input
               id="transfer-amount"
@@ -97,6 +113,32 @@ export default function TransferForm({ walletId }) {
             />
             <span aria-live="polite">
               {fieldErrors.amount?.map((message) => (
+                <span key={message} className="text-sm text-destructive">{message}</span>
+              ))}
+            </span>
+          </div>
+
+          <div className="grid gap-2">
+            <Label htmlFor="transfer-note">
+              Lời nhắn <span className="font-normal text-muted-foreground">(không bắt buộc)</span>
+            </Label>
+            <Input
+              id="transfer-note"
+              className={clsx(fieldErrors.note && 'border-destructive')}
+              value={note}
+              onChange={(e) => setNote(e.target.value)}
+              placeholder="tiền nhà tháng 9"
+              // maxLength dung BANG con so o backend. Chan tai cho de nguoi dung
+              // thay ngay khi go, thay vi go xong 200 ky tu roi nhan mot loi 400.
+              maxLength={140}
+              disabled={busy}
+              aria-invalid={Boolean(fieldErrors.note)}
+            />
+            <span className="text-xs text-muted-foreground">
+              {note.length}/140
+            </span>
+            <span aria-live="polite">
+              {fieldErrors.note?.map((message) => (
                 <span key={message} className="text-sm text-destructive">{message}</span>
               ))}
             </span>
