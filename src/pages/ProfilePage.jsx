@@ -1,5 +1,6 @@
 import { LogOut } from 'lucide-react'
 import { useAuth } from '../auth/useAuth'
+import AvatarUploader from '../components/AvatarUploader'
 import KycCard from '../components/KycCard'
 import ReconciliationCard from '../components/ReconciliationCard'
 import { Button } from '../components/ui/button'
@@ -22,6 +23,10 @@ export default function ProfilePage() {
       <div className="grid gap-4">
         <Card>
           <CardContent className="pt-6">
+            <div className="mb-5 border-b border-border pb-5">
+              <AvatarUploader />
+            </div>
+
             <dl className="m-0 grid gap-3 text-sm">
               <div className="flex justify-between gap-4">
                 <dt className="text-muted-foreground">Họ tên</dt>

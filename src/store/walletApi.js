@@ -40,7 +40,7 @@ const axiosBaseQuery =
 export const walletApi = createApi({
   reducerPath: 'walletApi',
   baseQuery: axiosBaseQuery(),
-  tagTypes: ['Wallet', 'Transactions', 'Kyc', 'Reconciliation', 'Beneficiaries', 'Statement'],
+  tagTypes: ['Wallet', 'Transactions', 'Kyc', 'Reconciliation', 'Beneficiaries', 'Statement', 'Me'],
   endpoints: (build) => ({
     getWallet: build.query({
       query: (walletId) => ({ url: `/api/wallets/${walletId}` }),
@@ -160,6 +160,20 @@ export const walletApi = createApi({
       invalidatesTags: ['Kyc'],
     }),
 
+    // ===== Ho so nguoi dung =====
+    getMe: build.query({
+      query: () => ({ url: '/api/users/me' }),
+      providesTags: ['Me'],
+    }),
+
+    uploadAvatar: build.mutation({
+      query: (formData) => ({ url: '/api/users/me/avatar', method: 'POST', data: formData }),
+      // ⚠️ KHONG dat Content-Type: voi FormData, trinh duyet phai tu sinh header
+      // kem `boundary=...`. Go tay 'multipart/form-data' la gui mot header THIEU
+      // boundary, va Spring khong tach duoc cac phan.
+      invalidatesTags: ['Me'],
+    }),
+
     // ===== Sao ke theo thang =====
     getStatement: build.query({
       query: (months = 6) => ({ url: '/api/statement', params: { months } }),
@@ -220,6 +234,8 @@ export const {
   useGetKycQuery,
   useSubmitKycMutation,
   useGetReconciliationQuery,
+  useGetMeQuery,
+  useUploadAvatarMutation,
   useGetStatementQuery,
   useGetBeneficiariesQuery,
   useSaveBeneficiaryMutation,

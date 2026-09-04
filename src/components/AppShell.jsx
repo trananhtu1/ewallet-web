@@ -1,6 +1,8 @@
 import { ArrowLeftRight, ChartColumn, Home, List, User } from 'lucide-react'
 import { NavLink, Outlet } from 'react-router'
 import { useAuth } from '../auth/useAuth'
+import { useGetMeQuery } from '../store/walletApi'
+import Avatar from './Avatar'
 import Brand from './Brand'
 
 /**
@@ -43,6 +45,10 @@ const TABS = [
 
 export default function AppShell() {
   const { session } = useAuth()
+
+  // Ho so tach khoi phien: phien chi mang token va ten luc dang nhap, con anh
+  // dai dien doi duoc bat cu luc nao ma khong dang nhap lai.
+  const { data: me } = useGetMeQuery()
 
   return (
     <div className="min-h-dvh lg:grid lg:grid-cols-[232px_1fr]">
@@ -97,7 +103,10 @@ export default function AppShell() {
           </div>
 
           {/* Ten xuat hien DUNG MOT LAN trong ca cay DOM. */}
-          <span className="truncate text-sm text-muted-foreground">{session.fullName}</span>
+          <div className="flex min-w-0 items-center gap-2">
+            <span className="truncate text-sm text-muted-foreground">{session.fullName}</span>
+            <Avatar url={me?.avatarUrl} name={me?.fullName ?? session.fullName} size={32} />
+          </div>
         </header>
 
         {/* pb-24 tren man hep: chua cho cho thanh tab noi ben duoi, neu khong no
