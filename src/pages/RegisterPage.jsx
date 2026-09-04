@@ -2,6 +2,11 @@ import clsx from 'clsx'
 import { useState } from 'react'
 import { Link, Navigate } from 'react-router'
 import { useAuth } from '../auth/useAuth'
+import AuthLayout from '../components/AuthLayout'
+import { Button } from '../components/ui/button'
+import { Card, CardContent } from '../components/ui/card'
+import { Input } from '../components/ui/input'
+import { Label } from '../components/ui/label'
 import { validateEmail, validateFullName, validatePassword } from '../lib/authRules'
 
 export default function RegisterPage() {
@@ -42,65 +47,78 @@ export default function RegisterPage() {
   if (session) return <Navigate to="/" replace />
 
   return (
-    <div className="auth-page">
-      <form className="card auth-card" onSubmit={handleSubmit}>
-        <h1 className="auth-title">Tạo tài khoản</h1>
+    <AuthLayout>
+      <h1 className="mb-1 text-2xl font-semibold tracking-tight">Tạo tài khoản</h1>
+      <p className="mb-6 text-sm text-muted-foreground">
+        Ví được tạo tự động ngay sau khi đăng ký.
+      </p>
 
-        {formError && <p className="error error--form">{formError}</p>}
+      <Card>
+        <CardContent className="pt-6">
+          <form onSubmit={handleSubmit} noValidate>
+            {formError && <p className="mb-4 text-sm font-medium text-destructive">{formError}</p>}
 
-        <label className="field">
-          <span className="label">Họ tên</span>
-          <input
-            className={clsx('input', fieldErrors.fullName && 'input--error')}
-            value={form.fullName}
-            onChange={update('fullName')}
-            autoComplete="name"
-            disabled={busy}
-          />
-          {fieldErrors.fullName?.map((message) => (
-            <span key={message} className="error">{message}</span>
-          ))}
-        </label>
+            <div className="mb-4 grid gap-2">
+              <Label htmlFor="fullName">Họ tên</Label>
+              <Input
+                id="fullName"
+                className={clsx(fieldErrors.fullName && 'border-destructive')}
+                value={form.fullName}
+                onChange={update('fullName')}
+                autoComplete="name"
+                disabled={busy}
+              />
+              {fieldErrors.fullName?.map((message) => (
+                <span key={message} className="text-sm text-destructive">{message}</span>
+              ))}
+            </div>
 
-        <label className="field">
-          <span className="label">Email</span>
-          <input
-            className={clsx('input', fieldErrors.email && 'input--error')}
-            type="email"
-            value={form.email}
-            onChange={update('email')}
-            autoComplete="email"
-            disabled={busy}
-          />
-          {fieldErrors.email?.map((message) => (
-            <span key={message} className="error">{message}</span>
-          ))}
-        </label>
+            <div className="mb-4 grid gap-2">
+              <Label htmlFor="email">Email</Label>
+              <Input
+                id="email"
+                className={clsx(fieldErrors.email && 'border-destructive')}
+                type="email"
+                value={form.email}
+                onChange={update('email')}
+                autoComplete="email"
+                disabled={busy}
+              />
+              {fieldErrors.email?.map((message) => (
+                <span key={message} className="text-sm text-destructive">{message}</span>
+              ))}
+            </div>
 
-        <label className="field">
-          <span className="label">Mật khẩu</span>
-          <input
-            className={clsx('input', fieldErrors.password && 'input--error')}
-            type="password"
-            value={form.password}
-            onChange={update('password')}
-            autoComplete="new-password"
-            disabled={busy}
-          />
-          {fieldErrors.password?.map((message) => (
-            <span key={message} className="error">{message}</span>
-          ))}
-          <span className="hint">Từ 8 đến 72 ký tự</span>
-        </label>
+            <div className="mb-5 grid gap-2">
+              <Label htmlFor="password">Mật khẩu</Label>
+              <Input
+                id="password"
+                className={clsx(fieldErrors.password && 'border-destructive')}
+                type="password"
+                value={form.password}
+                onChange={update('password')}
+                autoComplete="new-password"
+                disabled={busy}
+              />
+              {fieldErrors.password?.map((message) => (
+                <span key={message} className="text-sm text-destructive">{message}</span>
+              ))}
+              <span className="text-xs text-muted-foreground">Từ 8 đến 72 ký tự</span>
+            </div>
 
-        <button className="button button--primary" disabled={busy}>
-          {busy ? 'Đang tạo…' : 'Tạo tài khoản'}
-        </button>
+            <Button type="submit" className="w-full" disabled={busy}>
+              {busy ? 'Đang tạo…' : 'Tạo tài khoản'}
+            </Button>
+          </form>
+        </CardContent>
+      </Card>
 
-        <p className="auth-switch">
-          Đã có tài khoản? <Link to="/login">Đăng nhập</Link>
-        </p>
-      </form>
-    </div>
+      <p className="mt-5 text-center text-sm text-muted-foreground">
+        Đã có tài khoản?{' '}
+        <Link to="/login" className="font-medium text-primary hover:underline">
+          Đăng nhập
+        </Link>
+      </p>
+    </AuthLayout>
   )
 }
