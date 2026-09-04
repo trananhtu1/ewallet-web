@@ -1,5 +1,9 @@
+import { LogOut } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { useAuth } from '../auth/useAuth'
+import Brand from '../components/Brand'
+import ColdStartNotice from '../components/ColdStartNotice'
+import { Button } from '../components/ui/button'
 import DepositForm from '../components/DepositForm'
 import TransactionList from '../components/TransactionList'
 import TransferForm from '../components/TransferForm'
@@ -58,35 +62,35 @@ export default function WalletPage() {
   const isWaking = loading && elapsed >= WAKE_HINT_AFTER_SECONDS
 
   return (
-    <div className="page">
-      <header className="header">
-        <div className="header__bar">
-          <div>
-            <h1>Ví điện tử</h1>
-            <p className="muted">{session.fullName} · Ví #{walletId}</p>
-          </div>
+    <div className="mx-auto max-w-[760px] px-5 pb-16 pt-6">
+      <header className="mb-6 flex items-center justify-between gap-4">
+        <Brand />
 
-          <button type="button" className="button button--ghost" onClick={signOut}>
+        <div className="flex min-w-0 items-center gap-3">
+          {/* ⚠️ Ten chi duoc xuat hien MOT LAN trong DOM.
+              Ban dau cho nay co hai the - mot cho man rong, mot cho man hep -
+              va an nhau bang `hidden sm:inline` / `sm:hidden`. Nhung CSS chi
+              GIAU, khong xoa khoi DOM: trinh doc man hinh doc ten hai lan, va
+              test bat duoc ngay ("Found multiple elements with the text").
+              Man hep thi cho truncate, khong nhan ban the. */}
+          <span className="truncate text-sm text-muted-foreground">{session.fullName}</span>
+
+          <Button type="button" variant="ghost" size="sm" onClick={signOut}>
+            <LogOut className="size-4" aria-hidden="true" />
             Đăng xuất
-          </button>
+          </Button>
         </div>
       </header>
 
-      {/* role="status" chu khong phai role="alert": day la tin bao tien do, no
-          duoc phep cho toi luc nguoi dung ranh tai. alert cat ngang moi thu
-          nguoi dung dang nghe, va dung no cho mot dong "dang cho" la lam phien. */}
-      {isWaking && (
-        <p className="notice" role="status">
-          Backend đang khởi động — đã chờ {elapsed}s. Nó chạy trên gói miễn phí của Render,
-          tự tắt sau 15 phút không ai dùng và mất khoảng một phút để dậy lại. Trang đang chờ,
-          không phải lỗi.
-        </p>
-      )}
+      {isWaking && <ColdStartNotice seconds={elapsed} />}
 
       {/* Cai nay thi role="alert": trang dang hien so lieu KHONG dung, nguoi dung
           phai biet ngay chu khong doi. */}
       {loadError && (
-        <p className="notice notice--error" role="alert">
+        <p
+          className="mb-4 rounded-xl border border-destructive/30 bg-destructive/5 p-3.5 text-sm font-medium text-destructive"
+          role="alert"
+        >
           {loadError.code === 'WALLET_NOT_FOUND'
             ? `Không tìm thấy ví #${walletId}.`
             : loadError.message}
@@ -97,7 +101,7 @@ export default function WalletPage() {
           "chua biet so du" thanh "so du bang 0" ngay tai day. */}
       <WalletCard wallet={walletQuery.data} loading={loading} />
 
-      <div className="form-grid">
+      <div className="grid gap-4 sm:grid-cols-2">
         {/* Khong con onDone: nap/chuyen xong, RTK Query tu ghi vi moi vao cache
             va tu goi lai lich su giao dich - xem invalidatesTags trong
             walletApi.js. Truoc day WalletPage phai tu lam ca hai viec do. */}
@@ -105,8 +109,8 @@ export default function WalletPage() {
         <TransferForm walletId={walletId} />
       </div>
 
-      <section className="card">
-        <h2>Lịch sử giao dịch</h2>
+      <section className="mt-4 rounded-2xl border border-border bg-card p-5">
+        <h2 className="mb-4 text-[15px] font-semibold">Lịch sử giao dịch</h2>
         <TransactionList
           transactions={txQuery.data?.items ?? []}
           loading={loading}
@@ -114,14 +118,15 @@ export default function WalletPage() {
         />
 
         {txQuery.data?.hasMore && (
-          <button
+          <Button
             type="button"
-            className="button button--ghost"
+            variant="outline"
+            className="mt-4 w-full"
             disabled={dangTaiThem}
             onClick={() => setCursor(txQuery.data.nextCursor)}
           >
             {dangTaiThem ? 'Đang tải…' : 'Xem thêm'}
-          </button>
+          </Button>
         )}
       </section>
     </div>
