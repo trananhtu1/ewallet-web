@@ -136,7 +136,10 @@ describe('dang xuat', () => {
     renderApp('/')
     await screen.findByText('250.000,50 đ')
 
-    fireEvent.click(screen.getByRole('button', { name: 'Đăng xuất' }))
+    // Nut dang xuat da chuyen sang tab Ca nhan khi tach bon man hinh - no
+    // khong con la thu nguoi dung nhin thay moi lan mo app.
+    fireEvent.click(screen.getByRole('link', { name: /Cá nhân/ }))
+    fireEvent.click(await screen.findByRole('button', { name: 'Đăng xuất' }))
 
     await waitFor(() => {
       expect(screen.getByRole('heading', { name: 'Đăng nhập' })).toBeInTheDocument()
