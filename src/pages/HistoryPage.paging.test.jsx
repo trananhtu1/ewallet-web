@@ -27,7 +27,9 @@ import { mockAdapter, ok, reply, restoreAdapter } from '../test/axiosMock'
 
 function renderApp() {
   return render(
-    <MemoryRouter initialEntries={['/']}>
+    // ⚠️ Vao thang /lich-su, khong phai /. Sau khi tach bon tab thi trang chu
+    // chi lay 5 giao dich va KHONG co nut "Xem them" - phan trang song o day.
+    <MemoryRouter initialEntries={['/lich-su']}>
       <AuthProvider>
         <App />
       </AuthProvider>
