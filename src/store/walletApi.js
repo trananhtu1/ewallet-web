@@ -40,7 +40,7 @@ const axiosBaseQuery =
 export const walletApi = createApi({
   reducerPath: 'walletApi',
   baseQuery: axiosBaseQuery(),
-  tagTypes: ['Wallet', 'Transactions'],
+  tagTypes: ['Wallet', 'Transactions', 'Kyc', 'Reconciliation'],
   endpoints: (build) => ({
     getWallet: build.query({
       query: (walletId) => ({ url: `/api/wallets/${walletId}` }),
@@ -54,12 +54,19 @@ export const walletApi = createApi({
     // doc OFFSET 5 ra id 3,4,5,6,7 - ba dong vua xem hien lai lan hai. Tren mot
     // bang tien thi nguoi dung doc do la "toi bi tru tien hai lan".
     getTransactions: build.query({
-      query: ({ walletId, limit = 20, cursor }) => ({
+      query: ({ walletId, limit = 20, cursor, type, direction, status, from, to }) => ({
         url: `/api/wallets/${walletId}/transactions`,
         // Khong gui cursor=undefined: axios se bien no thanh ?cursor= (chuoi
         // rong), va backend coi chuoi rong la "co cursor nhung doc khong ra"
         // -> 400 INVALID_CURSOR ngay o trang dau.
-        params: cursor ? { limit, cursor } : { limit },
+        //
+        // Cung ly do do voi cac bo loc: loc bo moi khoa co gia tri rong TRUOC
+        // khi gui, thay vi de axios sinh ra `?type=&status=`. Backend nhan
+        // chuoi rong cho mot enum se nem 400 chu khong hieu la "khong loc".
+        params: Object.fromEntries(
+          Object.entries({ limit, cursor, type, direction, status, from, to })
+            .filter(([, v]) => v !== undefined && v !== null && v !== ''),
+        ),
       }),
 
       // ⭐ Ba tuy chon duoi day bien mot query "mot trang" thanh danh sach noi dai.
@@ -85,7 +92,19 @@ export const walletApi = createApi({
       // forceRefetch: vi cursor da bi loai khoi khoa cache o tren, RTK Query
       // nhin hai lan goi khac cursor thay y het nhau va se KHONG goi lan hai.
       // Dong nay noi cho no biet cursor doi thi van phai di lay.
-      forceRefetch: ({ currentArg, previousArg }) => currentArg?.cursor !== previousArg?.cursor,
+      //
+      // ⚠️ VA PHAI SO CA BO LOC, khong chi cursor. Day la cai bay di kem
+      // `serializeQueryArgs` rut gon: doi bo loc thi khoa cache VAN LA walletId
+      // nhu cu, nen neu chi so cursor thi RTK Query ket luan "khong co gi doi"
+      // va KHONG goi lai - nguoi dung bam loc ma danh sach dung im.
+      // Khong loi, khong log. Chi la khong phan hoi.
+      forceRefetch: ({ currentArg, previousArg }) =>
+        currentArg?.cursor !== previousArg?.cursor ||
+        currentArg?.type !== previousArg?.type ||
+        currentArg?.direction !== previousArg?.direction ||
+        currentArg?.status !== previousArg?.status ||
+        currentArg?.from !== previousArg?.from ||
+        currentArg?.to !== previousArg?.to,
 
       providesTags: ['Transactions'],
     }),
@@ -119,6 +138,33 @@ export const walletApi = createApi({
       invalidatesTags: ['Transactions'],
       onQueryStarted: writeWalletIntoCache,
     }),
+
+    // ===== KYC =====
+    //
+    // ⭐ Hai endpoint nay backend co tu 29/08 va chua he co giao dien nao goi.
+    getKyc: build.query({
+      query: () => ({ url: '/api/kyc/me' }),
+      providesTags: ['Kyc'],
+    }),
+
+    submitKyc: build.mutation({
+      query: (formData) => ({
+        url: '/api/kyc',
+        method: 'POST',
+        data: formData,
+        // ⚠️ KHONG dat Content-Type bang tay. Voi FormData, trinh duyet phai tu
+        // sinh header kem `boundary=...` - go 'multipart/form-data' vao day la
+        // gui mot header THIEU boundary, va Spring khong tach duoc cac phan,
+        // tra ve 400 voi thong bao khong lien quan gi toi nguyen nhan.
+      }),
+      invalidatesTags: ['Kyc'],
+    }),
+
+    // ===== Doi soat cuoi ngay =====
+    getReconciliation: build.query({
+      query: (limit = 7) => ({ url: '/api/reconciliation', params: { limit } }),
+      providesTags: ['Reconciliation'],
+    }),
   }),
 })
 
@@ -149,4 +195,7 @@ export const {
   useGetTransactionsQuery,
   useDepositMutation,
   useTransferMutation,
+  useGetKycQuery,
+  useSubmitKycMutation,
+  useGetReconciliationQuery,
 } = walletApi

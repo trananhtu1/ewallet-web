@@ -3,6 +3,9 @@ import { useEffect, useState } from 'react'
 import { useAuth } from '../auth/useAuth'
 import Brand from '../components/Brand'
 import ColdStartNotice from '../components/ColdStartNotice'
+import KycCard from '../components/KycCard'
+import ReconciliationCard from '../components/ReconciliationCard'
+import TransactionFilters from '../components/TransactionFilters'
 import { Button } from '../components/ui/button'
 import DepositForm from '../components/DepositForm'
 import TransactionList from '../components/TransactionList'
@@ -32,7 +35,36 @@ export default function WalletPage() {
   // Giu o day chu khong trong walletApi: day la trang thai cua MAN HINH (nguoi
   // dung da bam Xem them may lan), khong phai cua du lieu.
   const [cursor, setCursor] = useState(null)
-  const txQuery = useGetTransactionsQuery({ walletId, limit: 20, cursor })
+
+  const [boLoc, setBoLoc] = useState({
+    type: '', direction: '', status: '', fromDate: '', toDate: '',
+  })
+
+  // ⚠️ Doi bo loc thi PHAI dat lai cursor. Khong lam thi trang 2 cua bo loc CU
+  // duoc xin voi bo loc MOI - con tro tro vao mot dong khong con nam trong tap
+  // ket qua nua, va backend tra ve mot khoang giua chung. Hai trang thai nay
+  // luon doi cung nhau, nen chung di qua dung mot ham.
+  const doiBoLoc = (moi) => {
+    setBoLoc(moi)
+    setCursor(null)
+  }
+
+  const txQuery = useGetTransactionsQuery({
+    walletId,
+    limit: 20,
+    cursor,
+    type: boLoc.type,
+    direction: boLoc.direction,
+    status: boLoc.status,
+    // <input type="date"> cho ra 'YYYY-MM-DD', con backend doi ISO-8601 day du
+    // (@DateTimeFormat ISO.DATE_TIME). Gui thieu phan gio thi 400.
+    //
+    // Lay 00:00 va 23:59:59 THEO GIO MAY NGUOI DUNG roi de toISOString() doi
+    // sang UTC - khong ghep chuoi 'T00:00:00Z' bang tay, vi lam vay la ep moc
+    // thoi gian ve UTC va nguoi o UTC+7 se mat 7 gio dau cua ngay ho chon.
+    from: boLoc.fromDate ? new Date(`${boLoc.fromDate}T00:00:00`).toISOString() : '',
+    to: boLoc.toDate ? new Date(`${boLoc.toDate}T23:59:59.999`).toISOString() : '',
+  })
 
   // isLoading chi TRUE o lan tai dau tien cua mot o cache. Bam "Xem them" thi
   // no van FALSE va isFetching moi len TRUE - dung cai ta can, vi danh sach cu
@@ -119,8 +151,16 @@ export default function WalletPage() {
         <TransferForm walletId={walletId} />
       </div>
 
+      <div className="mt-4 grid gap-4">
+        <KycCard />
+        <ReconciliationCard />
+      </div>
+
       <section className="mt-4 rounded-2xl border border-border bg-card p-5">
         <h2 className="mb-4 text-[15px] font-semibold">Lịch sử giao dịch</h2>
+
+        <TransactionFilters value={boLoc} onChange={doiBoLoc} disabled={loading} />
+
         <TransactionList
           transactions={txQuery.data?.items ?? []}
           loading={loading}
