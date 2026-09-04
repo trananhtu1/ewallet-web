@@ -52,8 +52,19 @@ describe('TransactionList', () => {
     render(<TransactionList transactions={TRANSACTIONS} loading={false} />)
 
     const amount = screen.getByText(/900,00 đ/)
+
+    // Dau + la thu MOI NGUOI deu doc duoc, ke ca nguoi khong phan biet duoc mau
+    // va trinh doc man hinh. No la khang dinh chinh.
     expect(amount).toHaveTextContent('+')
-    expect(amount).toHaveClass('tx__amount--in')
+
+    // Mau chi la lop thu hai. Kiem bang `toHaveClass` la kiem TEN CLASS chu
+    // khong kiem mau that - doi tu `tx__amount--in` sang `text-emerald-700` da
+    // lam test nay do dung mot lan, du man hinh khong doi mau chut nao.
+    //
+    // Van giu lai vi no chan duoc loi that: gan nham nhanh IN sang mau cua OUT.
+    // Nhung phai nho day la mot khang dinh ve HIEN THUC HIEN TAI, khong phai ve
+    // hanh vi - doi he mau la phai sua no, va do la dung.
+    expect(amount.className).toContain('emerald')
   })
 
   /**

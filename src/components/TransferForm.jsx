@@ -5,6 +5,10 @@ import { SendHorizontal } from 'lucide-react'
 import { groupFieldErrors } from '../lib/api'
 import { formatMoney, validateAmount } from '../lib/money'
 import { useTransferMutation } from '../store/walletApi'
+import { Button } from './ui/button'
+import { Card, CardContent } from './ui/card'
+import { Input } from './ui/input'
+import { Label } from './ui/label'
 
 export default function TransferForm({ walletId }) {
   const [toWalletId, setToWalletId] = useState('')
@@ -55,53 +59,62 @@ export default function TransferForm({ walletId }) {
   }
 
   return (
-    <form className="card" onSubmit={handleSubmit}>
-      <h2>Chuyển tiền</h2>
+    <Card className="h-full">
+      <CardContent className="flex h-full flex-col pt-6">
+        <h2 className="mb-4 text-[15px] font-semibold">Chuyển tiền</h2>
 
-      <label className="field">
-        <span className="label">Ví đích</span>
-        <input
-          className={clsx('input', fieldErrors.toWalletId && 'input--error')}
-          value={toWalletId}
-          onChange={(e) => setToWalletId(e.target.value)}
-          placeholder="2"
-          inputMode="numeric"
-          disabled={busy}
-          aria-invalid={Boolean(fieldErrors.toWalletId)}
-        />
-        <span className="field__errors" aria-live="polite">
-          {fieldErrors.toWalletId?.map((message) => (
-            <span key={message} className="error">{message}</span>
-          ))}
-        </span>
-      </label>
+        <form onSubmit={handleSubmit} className="flex flex-1 flex-col" noValidate>
+          <div className="mb-4 grid gap-2">
+            <Label htmlFor="to-wallet">Ví đích</Label>
+            <Input
+              id="to-wallet"
+              className={clsx(fieldErrors.toWalletId && 'border-destructive')}
+              value={toWalletId}
+              onChange={(e) => setToWalletId(e.target.value)}
+              placeholder="2"
+              inputMode="numeric"
+              disabled={busy}
+              aria-invalid={Boolean(fieldErrors.toWalletId)}
+            />
+            <span aria-live="polite">
+              {fieldErrors.toWalletId?.map((message) => (
+                <span key={message} className="text-sm text-destructive">{message}</span>
+              ))}
+            </span>
+          </div>
 
-      <label className="field">
-        <span className="label">Số tiền</span>
-        <input
-          className={clsx('input', fieldErrors.amount && 'input--error')}
-          value={amount}
-          onChange={(e) => setAmount(e.target.value)}
-          placeholder="30000.00"
-          inputMode="decimal"
-          disabled={busy}
-          aria-invalid={Boolean(fieldErrors.amount)}
-        />
-        <span className="field__errors" aria-live="polite">
-          {fieldErrors.amount?.map((message) => (
-            <span key={message} className="error">{message}</span>
-          ))}
-        </span>
-      </label>
+          <div className="grid gap-2">
+            <Label htmlFor="transfer-amount">Số tiền</Label>
+            <Input
+              id="transfer-amount"
+              className={clsx(fieldErrors.amount && 'border-destructive')}
+              value={amount}
+              onChange={(e) => setAmount(e.target.value)}
+              placeholder="30000.00"
+              inputMode="decimal"
+              disabled={busy}
+              aria-invalid={Boolean(fieldErrors.amount)}
+            />
+            <span aria-live="polite">
+              {fieldErrors.amount?.map((message) => (
+                <span key={message} className="text-sm text-destructive">{message}</span>
+              ))}
+            </span>
+          </div>
 
-      {/* INSUFFICIENT_FUNDS bao o day chu khong duoi o input, va no la loi
-          nguoi dung can nghe nhat -> aria-live giu san vung nay tu dau. */}
-      <p className="error error--form" aria-live="polite">{formError}</p>
+          {/* INSUFFICIENT_FUNDS bao o day chu khong duoi o input, va no la loi
+              nguoi dung can nghe nhat -> aria-live giu san vung nay tu dau.
+              `empty:hidden` tat khoang trong khi chua co loi. */}
+          <p className="mt-3 mb-0 text-sm font-medium text-destructive empty:hidden" aria-live="polite">
+            {formError}
+          </p>
 
-      <button className="button button--primary" disabled={busy}>
-        <SendHorizontal size={16} aria-hidden="true" />
-        {busy ? 'Đang chuyển…' : 'Chuyển tiền'}
-      </button>
-    </form>
+          <Button type="submit" className="mt-auto w-full" disabled={busy}>
+            <SendHorizontal className="size-4" aria-hidden="true" />
+            {busy ? 'Đang chuyển…' : 'Chuyển tiền'}
+          </Button>
+        </form>
+      </CardContent>
+    </Card>
   )
 }
