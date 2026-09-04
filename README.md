@@ -1,16 +1,45 @@
 # ewallet-web
 
-Frontend cho ứng dụng ví điện tử.
+**Giao diện web cho một hệ thống ví điện tử** — đăng ký, đăng nhập, xem số dư, nạp tiền,
+chuyển tiền, và tra lịch sử giao dịch.
 
-**Stack:** React 19 · Vite 8 · JavaScript · Tailwind CSS 4
+🌐 **Demo:** [ewallet-web.vercel.app](https://ewallet-web.vercel.app) ·
+⚙️ **Backend:** [`ewallet-api`](https://github.com/trananhtu1/ewallet-api)
 
-Backend nằm ở repo riêng: [`ewallet-api`](https://github.com/trananhtu1/ewallet-api)
+> ⏳ Backend chạy trên gói free của Render nên **ngủ sau 15 phút** không có traffic.
+> Lần tải đầu mất **~75 giây** để đánh thức. Sau đó bình thường.
 
-> 📋 **Đang làm gì tiếp theo:** [`VIEC-CAN-LAM.md`](VIEC-CAN-LAM.md)
-> — việc theo thứ tự, 8 tình huống kiểm thử, và ba luật không được phá.
->
-> 📄 Hợp đồng API đầy đủ (mọi JSON copy từ response thật, bảng 7 mã lỗi):
-> `java-learn/FE-SONG-SONG.md`
+---
+
+## Về dự án
+
+Đây là nửa frontend của một hệ thống ví điện tử tự xây. Phần đáng nói không nằm ở giao diện
+mà ở **những thứ frontend phải làm đúng khi đằng sau là tiền**:
+
+| Vấn đề | Cách xử lý |
+|---|---|
+| JavaScript chỉ có một kiểu số, và nó là `double` | **Tiền đi qua dưới dạng chuỗi, cả hai chiều** — không gọi `Number()` ở bất kỳ bước nào |
+| Token hết hạn giữa lúc người dùng đang thao tác | Tự làm mới token ngầm, **một lần cho nhiều request đang bay** *(single-flight)* |
+| Gõ sai mật khẩu cũng trả 401, như phiên hết hạn | Phân biệt hai loại 401 — nhầm thì màn đăng nhập **tự đá chính nó** |
+| Bấm "Chuyển tiền" hai lần vì mạng lag | Gửi kèm `Idempotency-Key`, backend chỉ ghi một lần |
+| Lịch sử giao dịch dài | Phân trang **cursor**, nút "Xem thêm" nối trang |
+
+**92 test** *(Vitest + React Testing Library)* canh những luật này — đặc biệt là luật về tiền:
+có một ca dựng riêng cho `12345678901234567.89`, sẽ **đỏ ngay** nếu ai đó nhét `Number()` vào
+giữa đường vì "cho gọn".
+
+---
+
+## Stack
+
+| | |
+|---|---|
+| **Nền** | React 19 · Vite 8 · JavaScript |
+| **Trạng thái** | Redux Toolkit · RTK Query · Redux-Saga |
+| **Gọi API** | axios *(một instance, một chỗ gắn token)* |
+| **Giao diện** | Tailwind CSS 4 · shadcn/ui · lucide-react |
+| **Kiểm thử** | Vitest · React Testing Library |
+| **Triển khai** | Vercel |
 
 ---
 
@@ -100,10 +129,12 @@ khớp với `@DecimalMin` / `@Digits` bên backend.
 
 ```
 src/
-  auth/        AuthProvider · useAuth · RequireAuth   (phiên đăng nhập)
-  pages/       LoginPage · RegisterPage · WalletPage  (một file một màn)
-  components/  các khối dùng lại trong màn ví
-  lib/         api · session · money · authRules      (không biết gì về React)
+  auth/         AuthProvider · useAuth · RequireAuth   (phiên đăng nhập)
+  pages/        LoginPage · RegisterPage · WalletPage  (một file một màn)
+  components/   các khối dùng lại
+    ui/         shadcn/ui
+  store/        Redux — authSlice · authSaga · walletApi (RTK Query)
+  lib/          http (axios) · session · money · authRules  (không biết gì về React)
 ```
 
 | Route | Ai vào được |
