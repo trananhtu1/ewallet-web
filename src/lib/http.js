@@ -7,16 +7,42 @@ import { clearSession, isAccessTokenFresh, readSession, saveSession } from './se
 const BASE_URL = import.meta.env.VITE_API_URL
 
 /**
- * MOT axios instance cho ca app.
+ * ⚠️⚠️ KHONG dat `Content-Type: application/json` lam header MAC DINH o day.
  *
- * <p>Khong dung `axios` mac dinh truc tiep: interceptor gan vao instance rieng
- * thi khong ro ri sang thu vien khac cung dung axios, va test co the thay
+ * <p>Dong do tung nam o ngay cho nay va no lam CHET moi lan upload file. Axios
+ * doc header truoc khi doc du lieu - trong `transformRequest`:
+ *
+ * <pre>
+ *   const hasJSONContentType = contentType.indexOf('application/json') > -1
+ *   if (isFormData) return hasJSONContentType ? JSON.stringify(formDataToJSON(data)) : data
+ * </pre>
+ *
+ * Nghia la mot `FormData` chua tam anh bi <b>am tham doi thanh JSON</b>. Do
+ * duoc: than request that su di ra day la <code>{"file":{}}</code> - ba byte
+ * anh bien mat, vi `JSON.stringify` mot `Blob` ra doi ngoac rong.
+ *
+ * <p>Khong co loi nao o trinh duyet, va cung khong co gi de nhin trong tab
+ * Network ngoai mot request "da gui" - nen no doc ra giong het "khong goi duoc
+ * API". Phia Spring thi `@RequestParam("file") MultipartFile` khong co gi de
+ * lay: request nay khong phai multipart.
+ *
+ * <p>Bo dong do di thi axios tu chon dung header cho tung loai than:
+ *
+ * <pre>
+ *   object thuong  ->  application/json                       (tu dat)
+ *   FormData       ->  multipart/form-data; boundary=...      (trinh duyet dat)
+ *   GET khong than ->  khong co Content-Type                  (dung vay)
+ * </pre>
+ *
+ * 📌 Bai hoc: mot mac dinh dat o tang duoi cung co the vo hieu hoa mot quy tac
+ * viet dung o tang tren. `walletApi.js` co han hai dong ghi chu "KHONG dat
+ * Content-Type bang tay" - va chung deu dung, nhung dong nay dat ho chung.
+ *
+ * <p>MOT axios instance cho ca app: interceptor gan vao instance rieng thi
+ * khong ro ri sang thu vien khac cung dung axios, va test co the thay
  * `http.defaults.adapter` ma khong dung toi trang thai toan cuc.
  */
-export const http = axios.create({
-  baseURL: BASE_URL,
-  headers: { 'Content-Type': 'application/json' },
-})
+export const http = axios.create({ baseURL: BASE_URL })
 
 /**
  * Duoc goi khi token HET HAN giua chung (server tra 401 cho mot request DA co
