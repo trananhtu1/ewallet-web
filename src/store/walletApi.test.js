@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it } from 'vitest'
-import { mockAdapter, ok, restoreAdapter, sentBody } from '../test/axiosMock'
+import { mockAdapter, ok, restoreAdapter, sentBody, sentHeader } from '../test/axiosMock'
 import { saveSession, clearSession } from '../lib/session'
 import { makeStore } from './index'
 import { walletApi } from './walletApi'
@@ -107,5 +107,76 @@ describe('walletApi gui tien len server', () => {
 
     expect(result.data.balance).toBe('12345678901234567.89')
     expect(typeof result.data.balance).toBe('string')
+  })
+})
+
+/**
+ * ⭐ Nhom test nay sinh ra tu mot su co THAT: bam "Doi anh" thi khong co gi xay
+ * ra, va trong tab Network trong nhu chua he goi API.
+ *
+ * <p>Nguyen nhan khong nam trong file nay ma o `src/lib/http.js`: instance
+ * axios dat san `Content-Type: application/json` cho MOI request, va axios doc
+ * header do TRUOC khi doc du lieu - thay JSON thi no `JSON.stringify` luon cai
+ * `FormData`, ra <code>{"file":{}}</code>. Anh bien mat trước khi roi trinh
+ * duyet, va Spring nhan mot request khong phai multipart.
+ *
+ * <p>Nen test o day khong kiem "goi dung URL" - no kiem thu duy nhat co the
+ * vo trong im lang: <b>than request di ra day co con la FormData khong.</b>
+ */
+describe('walletApi gui FILE len server', () => {
+  /** Mot tam anh gia, du de tao FormData that. */
+  function anhGia() {
+    const fd = new FormData()
+    fd.append('file', new Blob([new Uint8Array([1, 2, 3])], { type: 'image/jpeg' }), 'avatar.jpg')
+    return fd
+  }
+
+  it('doi anh dai dien: FormData di toi adapter VAN la FormData, khong bi doi thanh JSON', async () => {
+    datPhien()
+    const adapter = mockAdapter(ok({ avatarUrl: 'https://kho/8.jpg?v=1' }))
+    const store = makeStore()
+
+    await store.dispatch(walletApi.endpoints.uploadAvatar.initiate(anhGia()))
+
+    const { data } = adapter.mock.calls[0][0]
+    expect(data).toBeInstanceOf(FormData)
+    expect(data.get('file')).toBeInstanceOf(Blob)
+  })
+
+  /**
+   * Kiem ca header, vi day moi la thu KICH HOAT viec doi kieu o tren. Bo test
+   * nay thi ai do dat lai mac dinh JSON se lam do dung mot test - de bi coi la
+   * "test kho tinh" roi sua test thay vi sua code.
+   */
+  it('khong tu dat Content-Type cho FormData - de trinh duyet sinh kem boundary', async () => {
+    datPhien()
+    const adapter = mockAdapter(ok({ avatarUrl: 'https://kho/8.jpg?v=1' }))
+    const store = makeStore()
+
+    await store.dispatch(walletApi.endpoints.uploadAvatar.initiate(anhGia()))
+
+    expect(sentHeader(adapter, 0, 'Content-Type')).not.toMatch(/application\/json/)
+  })
+
+  /** Nop KYC di cung mot duong ong, va no da hong y het - khong chi avatar. */
+  it('nop KYC: FormData cung phai song sot qua tang HTTP', async () => {
+    datPhien()
+    const adapter = mockAdapter(ok({ status: 'PENDING' }))
+    const store = makeStore()
+
+    await store.dispatch(walletApi.endpoints.submitKyc.initiate(anhGia()))
+
+    expect(adapter.mock.calls[0][0].data).toBeInstanceOf(FormData)
+  })
+
+  /** Than JSON binh thuong VAN phai duoc gan application/json sau khi bo mac dinh. */
+  it('than JSON van duoc axios tu dat application/json', async () => {
+    datPhien()
+    const adapter = mockAdapter(ok({ id: 3, balance: '1.00' }))
+    const store = makeStore()
+
+    await store.dispatch(walletApi.endpoints.deposit.initiate({ walletId: 3, amount: '1000' }))
+
+    expect(sentHeader(adapter, 0, 'Content-Type')).toMatch(/application\/json/)
   })
 })
